@@ -1,6 +1,6 @@
 {
     "name": "@lucode/ploy",
-    "version": "0.0.0-rc.1",
+    "version": "0.0.0",
     "type": "module",
     "description": "Gitea action with helpers to deploy apps",
     "scripts": {
