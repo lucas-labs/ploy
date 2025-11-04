@@ -6,8 +6,8 @@ import { resolve, join } from 'path';
 import semver from 'semver';
 import { confirm, select } from '@inquirer/prompts';
 
-// Release Script for luploy
-// This script automates the release process of the luploy gitea action by updating the version,
+// Release Script for ploy
+// This script automates the release process of the ploy gitea action by updating the version,
 // creating git tags, and pushing changes to the remote repository.
 
 /**
@@ -347,7 +347,7 @@ async function release() {
         const autoNotes = generateReleaseNotes(previousTag, 'HEAD');
 
         // Create a temporary directory and file for the release notes
-        const tempDir = mkdtempSync(join(tmpdir(), 'luploy-release-'));
+        const tempDir = mkdtempSync(join(tmpdir(), 'ploy-release-'));
         const notesFile = join(tempDir, 'RELEASE_NOTES.md');
         writeFileSync(notesFile, autoNotes, 'utf-8');
 
