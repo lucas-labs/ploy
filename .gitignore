@@ -97,5 +97,9 @@ Thumbs.db
 # Ignore built ts files
 lib/
 
+# VsCode workspace settings
+ploy.code-workspace
+
+
 # Other
 Taskfile.yml
