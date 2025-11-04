@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "lib": ["ESNext"],
+        "target": "ESNext",
+        "module": "es2022",
+        "moduleDetection": "force",
+        "allowJs": true,
+        "strict": true,
+
+        // Bundler mode
+        "moduleResolution": "bundler",
+        "noEmit": true
+    }
+}
