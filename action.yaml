@@ -1,14 +1,70 @@
-name: typescript-action
-description: Template of TypeScript Action
+name: ploy
+description: Gitea Action for automated Windows release preparation and deployment
 
 inputs:
-  name:
-    description: Example
+  app_name:
+    description: 'Logical name of the application'
     required: true
-  token:
-    description: GitHub token
+  deploy_root:
+    description: 'Root path where releases are stored'
     required: true
-    default: ${{ github.token }}
+  repo_path:
+    description: 'Path to the repository (defaults to current working directory)'
+    required: false
+    default: ${{ github.workspace }}
+  install_cmd:
+    description: 'Command to install dependencies (e.g., "npm install", "bun install")'
+    required: false
+  build_cmd:
+    description: 'Command to build the application (e.g., "npm run build", "bun run build")'
+    required: false
+  dist_dir:
+    description: 'Relative path to the directory containing built files to be deployed'
+    required: false
+  pre_deploy_cmds:
+    description: 'JSON array of commands to run after deployment (e.g., ["bun install", "bun run migrate"])'
+    required: false
+  healthcheck_url:
+    description: 'URL to perform a health check after deployment'
+    required: false
+  expected_healthcheck_code_range:
+    description: 'Acceptable HTTP status code range for health check (e.g., "200-299")'
+    required: false
+    default: '200-299'
+  healthcheck_timeout:
+    description: 'Timeout in seconds for the health check HTTP request'
+    required: false
+    default: '30'
+  healthcheck_retries:
+    description: 'Number of retries for the health check HTTP request'
+    required: false
+    default: '3'
+  healthcheck_delay:
+    description: 'Delay in seconds before performing the health check after deployment'
+    required: false
+    default: '5'
+  healthcheck_interval:
+    description: 'Interval in seconds between health check retries'
+    required: false
+    default: '5'
+
+outputs:
+  release_path:
+    description: 'Absolute path to the new release directory'
+  release_id:
+    description: 'The release identifier (timestamp-sha format)'
+  previous_release:
+    description: 'Path to the previous release (if any)'
+  deployment_time:
+    description: 'ISO 8601 timestamp of when the deployment completed'
+  healthcheck_status:
+    description: 'Final status of the health check (passed or failed)'
+  healthcheck_code:
+    description: 'HTTP status code returned by the health check'
+  healthcheck_attempts:
+    description: 'Number of health check attempts made'
+  current_junction:
+    description: 'Path to the current junction'
 
 runs:
   using: 'node20'

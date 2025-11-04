@@ -5,11 +5,21 @@ import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
     {
+        ignores: ['dist/**', 'node_modules/**', '**/*.js.map'],
+    },
+    {
         files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
         plugins: { js },
         extends: ['js/recommended'],
         languageOptions: { globals: globals.node },
     },
     { files: ['**/*.js'], languageOptions: { sourceType: 'script' } },
-    tseslint.configs.recommended,
+    ...tseslint.configs.recommended,
+    // disable @typescript-eslint/no-explicit-any
+    // {
+    // files: ['**/*.{ts,mts,cts}'],
+    // rules: {
+    // '@typescript-eslint/no-explicit-any': 'off',
+    // },
+    // },
 ]);
