@@ -13,10 +13,16 @@
 
         // package manager artifacts
         "node_modules": true,
-        "bun.lock": true
+        "bun.lock": true,
+
+        // hooks
+        ".husky": true,
+
+        // build outputs
+        "dist": true,
 
         // ci/cd
-        // ".github": true
+        ".github": true
     },
     "editor.formatOnSave": true,
     "editor.rulers": [100],
