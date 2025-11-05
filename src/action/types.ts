@@ -2,8 +2,8 @@ export interface ActionInputs {
     appName: string;
     deployRoot: string;
     repoPath: string;
-    installCmd?: string;
-    buildCmd?: string;
+    installCmds?: string[];
+    buildCmds?: string[];
     distDir?: string;
     preDeployCmds?: string[];
     healthcheckUrl?: string;

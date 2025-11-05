@@ -114,7 +114,7 @@ describe('Junction Management Utilities', () => {
         it('should not throw if junction does not exist', async () => {
             const junctionPath = path.join(testDir, 'non-existent-junction');
 
-            await expect(removeJunction(junctionPath)).resolves.not.toThrow();
+            await expect(removeJunction(junctionPath)).resolves.toBeUndefined();
         });
 
         it('should not delete the target directory', async () => {
@@ -146,7 +146,9 @@ describe('Junction Management Utilities', () => {
             expect(isJunc).toBe(true);
 
             const target = await fs.readlink(currentPath);
-            expect(target).toBe(newRelease);
+            // Normalize path to handle Windows trailing backslash
+            const normalizedTarget = target.replace(/[\\]+$/, '');
+            expect(normalizedTarget).toBe(newRelease);
         });
 
         it('should update existing junction to new release', async () => {
@@ -161,7 +163,9 @@ describe('Junction Management Utilities', () => {
             await updateCurrentJunction(testDir, newRelease);
 
             const target = await fs.readlink(currentPath);
-            expect(target).toBe(newRelease);
+            // Normalize path to handle Windows trailing backslash
+            const normalizedTarget = target.replace(/[\\]+$/, '');
+            expect(normalizedTarget).toBe(newRelease);
         });
 
         it('should throw error if current exists but is not a junction', async () => {

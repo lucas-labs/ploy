@@ -86,8 +86,10 @@ export async function getPreviousRelease(deployRoot: string): Promise<string | u
 
     try {
         const target = await fs.readlink(currentPath);
-        core.info(`Previous release: ${target}`);
-        return target;
+        // Normalize the path to remove trailing backslashes on Windows
+        const normalizedTarget = target.replace(/[\\]+$/, '');
+        core.info(`Previous release: ${normalizedTarget}`);
+        return normalizedTarget;
     } catch (error: unknown) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
             core.info('No previous release found (current junction does not exist)');

@@ -12,17 +12,17 @@ inputs:
     description: 'Path to the repository (defaults to current working directory)'
     required: false
     default: ${{ github.workspace }}
-  install_cmd:
-    description: 'Command to install dependencies (e.g., "npm install", "bun install")'
+  install_cmds:
+    description: 'Script to install dependencies (e.g., "npm install", "bun install"). Also supports multiline format.'
     required: false
-  build_cmd:
-    description: 'Command to build the application (e.g., "npm run build", "bun run build")'
+  build_cmds:
+    description: 'Script to build the application (e.g., "npm run build", "bun run build"). Also supports multiline format.'
     required: false
   dist_dir:
     description: 'Relative path to the directory containing built files to be deployed'
     required: false
   pre_deploy_cmds:
-    description: 'JSON array of commands to run after deployment (e.g., ["bun install", "bun run migrate"])'
+    description: 'Script to run in the release directory before activation. Supports: single command string, JSON array ["cmd1", "cmd2"], or multiline script (one command per line).'
     required: false
   healthcheck_url:
     description: 'URL to perform a health check after deployment'

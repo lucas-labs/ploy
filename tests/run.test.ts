@@ -107,8 +107,8 @@ describe('Action Run Function', () => {
                     app_name: 'my-app',
                     deploy_root: '/deploy',
                     repo_path: '/repo',
-                    install_cmd: 'npm install',
-                    build_cmd: 'npm run build',
+                    install_cmds: 'npm install',
+                    build_cmds: 'npm run build',
                     dist_dir: 'dist',
                     expected_healthcheck_code_range: '200-299',
                     healthcheck_timeout: '30',
@@ -123,8 +123,8 @@ describe('Action Run Function', () => {
 
             expect(deployAction).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    installCmd: 'npm install',
-                    buildCmd: 'npm run build',
+                    installCmds: ['npm install'],
+                    buildCmds: ['npm run build'],
                     distDir: 'dist',
                 }),
             );
@@ -161,7 +161,7 @@ describe('Action Run Function', () => {
                     app_name: 'my-app',
                     deploy_root: '/deploy',
                     repo_path: '/repo',
-                    pre_deploy_cmds: 'invalid json',
+                    pre_deploy_cmds: '{"invalid": "json object"}',
                     expected_healthcheck_code_range: '200-299',
                     healthcheck_timeout: '30',
                     healthcheck_retries: '3',

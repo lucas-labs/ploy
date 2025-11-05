@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import type { ActionInputs, ActionOutputs } from '../../types';
 import { ensureDeployRoot, createReleaseDirectory, getPreviousRelease } from '../../utils/dirs';
 import { updateCurrentJunction } from '../../utils/junction';
-import { executeCommand, executeCommands } from '../../utils/commands';
+import { executeCommands } from '../../utils/commands';
 import { performHealthCheck } from '../../utils/healthcheck';
 import { copyFiles } from '../../utils/files';
 
@@ -48,21 +48,21 @@ export async function deployAction(inputs: ActionInputs): Promise<ActionOutputs>
     core.endGroup();
 
     // Step 2: Install Dependencies
-    if (inputs.installCmd) {
+    if (inputs.installCmds && inputs.installCmds.length > 0) {
         core.startGroup('📦 Step 2: Install Dependencies');
-        await executeCommand(inputs.installCmd, inputs.repoPath, 'Install dependencies');
+        await executeCommands(inputs.installCmds, inputs.repoPath, 'Install dependencies');
         core.endGroup();
     } else {
-        core.info('📦 Step 2: Install Dependencies - Skipped (no install_cmd provided)');
+        core.info('📦 Step 2: Install Dependencies - Skipped (no install_cmds provided)');
     }
 
     // Step 3: Build Application
-    if (inputs.buildCmd) {
+    if (inputs.buildCmds && inputs.buildCmds.length > 0) {
         core.startGroup('🔨 Step 3: Build Application');
-        await executeCommand(inputs.buildCmd, inputs.repoPath, 'Build application');
+        await executeCommands(inputs.buildCmds, inputs.repoPath, 'Build application');
         core.endGroup();
     } else {
-        core.info('🔨 Step 3: Build Application - Skipped (no build_cmd provided)');
+        core.info('🔨 Step 3: Build Application - Skipped (no build_cmds provided)');
     }
 
     // Step 4: Prepare Release Directory

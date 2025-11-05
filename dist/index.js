@@ -25555,7 +25555,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 6623:
+/***/ 6327:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -25644,8 +25644,10 @@ async function getPreviousRelease(deployRoot) {
     const currentPath = external_path_.join(deployRoot, 'current');
     try {
         const target = await external_fs_.promises.readlink(currentPath);
-        core.info(`Previous release: ${target}`);
-        return target;
+        // Normalize the path to remove trailing backslashes on Windows
+        const normalizedTarget = target.replace(/[\\]+$/, '');
+        core.info(`Previous release: ${normalizedTarget}`);
+        return normalizedTarget;
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
@@ -26060,22 +26062,22 @@ async function deployAction(inputs) {
     await ensureDeployRoot(inputs.deployRoot);
     core.endGroup();
     // Step 2: Install Dependencies
-    if (inputs.installCmd) {
+    if (inputs.installCmds && inputs.installCmds.length > 0) {
         core.startGroup('📦 Step 2: Install Dependencies');
-        await executeCommand(inputs.installCmd, inputs.repoPath, 'Install dependencies');
+        await executeCommands(inputs.installCmds, inputs.repoPath, 'Install dependencies');
         core.endGroup();
     }
     else {
-        core.info('📦 Step 2: Install Dependencies - Skipped (no install_cmd provided)');
+        core.info('📦 Step 2: Install Dependencies - Skipped (no install_cmds provided)');
     }
     // Step 3: Build Application
-    if (inputs.buildCmd) {
+    if (inputs.buildCmds && inputs.buildCmds.length > 0) {
         core.startGroup('🔨 Step 3: Build Application');
-        await executeCommand(inputs.buildCmd, inputs.repoPath, 'Build application');
+        await executeCommands(inputs.buildCmds, inputs.repoPath, 'Build application');
         core.endGroup();
     }
     else {
-        core.info('🔨 Step 3: Build Application - Skipped (no build_cmd provided)');
+        core.info('🔨 Step 3: Build Application - Skipped (no build_cmds provided)');
     }
     // Step 4: Prepare Release Directory
     core.startGroup('📂 Step 4: Prepare Release Directory');
@@ -26147,7 +26149,56 @@ async function deployAction(inputs) {
     };
 }
 
+;// CONCATENATED MODULE: ./src/action/utils/commands/parse.ts
+/**
+ * Parses command input that can be in multiple formats:
+ * 1. Single command string: "npm install"
+ * 2. JSON array: '["npm install", "npm run build"]'
+ * 3. Multiline script (one command per line):
+ *    ```
+ *    npm install
+ *    npm run build
+ *    ```
+ *
+ * @param input - The command input string
+ * @param inputName - Name of the input (for error messages)
+ * @returns Array of commands, or undefined if input is empty
+ */
+function parseCommandInput(input, inputName) {
+    if (!input || input.trim() === '') {
+        return undefined;
+    }
+    const trimmed = input.trim();
+    // Try to parse as JSON if it starts with [ or {
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (!Array.isArray(parsed)) {
+                throw new Error(`${inputName} must be a JSON array`);
+            }
+            if (parsed.some((cmd) => typeof cmd !== 'string')) {
+                throw new Error(`${inputName} array must contain only strings`);
+            }
+            return parsed.filter((cmd) => cmd.trim() !== '');
+        }
+        catch (error) {
+            throw new Error(`Failed to parse ${inputName} as JSON: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    // Check if it's a multiline script (contains newlines)
+    if (trimmed.includes('\n')) {
+        const commands = trimmed
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line !== '' && !line.startsWith('#')); // Filter empty lines and comments
+        return commands.length > 0 ? commands : undefined;
+    }
+    // Single command string
+    return [trimmed];
+}
+
 ;// CONCATENATED MODULE: ./src/action/utils/context/index.ts
+
 
 /** parses action inputs from the environment */
 const getInputs = () => {
@@ -26156,23 +26207,14 @@ const getInputs = () => {
     const deployRoot = core.getInput('deploy_root', { required: true });
     // optional inputs with defaults
     const repoPath = core.getInput('repo_path') || process.cwd();
-    const installCmd = core.getInput('install_cmd') || undefined;
-    const buildCmd = core.getInput('build_cmd') || undefined;
     const distDir = core.getInput('dist_dir') || undefined;
-    // pre-deploy commands
+    // command inputs - all support multiple formats
+    const installCmdsInput = core.getInput('install_cmds');
+    const installCmds = parseCommandInput(installCmdsInput, 'install_cmds');
+    const buildCmdsInput = core.getInput('build_cmds');
+    const buildCmds = parseCommandInput(buildCmdsInput, 'build_cmds');
     const preDeployCmdsInput = core.getInput('pre_deploy_cmds');
-    let preDeployCmds;
-    if (preDeployCmdsInput) {
-        try {
-            preDeployCmds = JSON.parse(preDeployCmdsInput);
-            if (!Array.isArray(preDeployCmds)) {
-                throw new Error('pre_deploy_cmds must be a JSON array');
-            }
-        }
-        catch (error) {
-            throw new Error(`Failed to parse pre_deploy_cmds: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
+    const preDeployCmds = parseCommandInput(preDeployCmdsInput, 'pre_deploy_cmds');
     // health check inputs
     const healthcheckUrl = core.getInput('healthcheck_url') || undefined;
     const expectedHealthcheckCodeRange = core.getInput('expected_healthcheck_code_range') || '200-299';
@@ -26184,8 +26226,8 @@ const getInputs = () => {
         appName,
         deployRoot,
         repoPath,
-        installCmd,
-        buildCmd,
+        installCmds,
+        buildCmds,
         distDir,
         preDeployCmds,
         healthcheckUrl,
@@ -26241,7 +26283,7 @@ const run = async () => {
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6623);
+/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6327);
 
 
 try {

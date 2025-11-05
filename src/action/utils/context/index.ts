@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import type { ActionInputs, ActionOutputs } from '../../types';
+import { parseCommandInput } from '../commands/parse';
 
 /** parses action inputs from the environment */
 const getInputs = (): ActionInputs => {
@@ -9,25 +10,17 @@ const getInputs = (): ActionInputs => {
 
     // optional inputs with defaults
     const repoPath = core.getInput('repo_path') || process.cwd();
-    const installCmd = core.getInput('install_cmd') || undefined;
-    const buildCmd = core.getInput('build_cmd') || undefined;
     const distDir = core.getInput('dist_dir') || undefined;
 
-    // pre-deploy commands
+    // command inputs - all support multiple formats
+    const installCmdsInput = core.getInput('install_cmds');
+    const installCmds = parseCommandInput(installCmdsInput, 'install_cmds');
+
+    const buildCmdsInput = core.getInput('build_cmds');
+    const buildCmds = parseCommandInput(buildCmdsInput, 'build_cmds');
+
     const preDeployCmdsInput = core.getInput('pre_deploy_cmds');
-    let preDeployCmds: string[] | undefined;
-    if (preDeployCmdsInput) {
-        try {
-            preDeployCmds = JSON.parse(preDeployCmdsInput);
-            if (!Array.isArray(preDeployCmds)) {
-                throw new Error('pre_deploy_cmds must be a JSON array');
-            }
-        } catch (error) {
-            throw new Error(
-                `Failed to parse pre_deploy_cmds: ${error instanceof Error ? error.message : String(error)}`,
-            );
-        }
-    }
+    const preDeployCmds = parseCommandInput(preDeployCmdsInput, 'pre_deploy_cmds');
 
     // health check inputs
     const healthcheckUrl = core.getInput('healthcheck_url') || undefined;
@@ -42,8 +35,8 @@ const getInputs = (): ActionInputs => {
         appName,
         deployRoot,
         repoPath,
-        installCmd,
-        buildCmd,
+        installCmds,
+        buildCmds,
         distDir,
         preDeployCmds,
         healthcheckUrl,

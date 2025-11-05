@@ -144,13 +144,28 @@ describe('Deploy Action', () => {
         it('should execute install command when provided', async () => {
             const inputs: ActionInputs = {
                 ...createBasicInputs(),
-                installCmd: 'npm install',
+                installCmds: ['npm install'],
             };
 
             await deployAction(inputs);
 
-            expect(executeCommand).toHaveBeenCalledWith(
-                'npm install',
+            expect(executeCommands).toHaveBeenCalledWith(
+                ['npm install'],
+                repoPath,
+                'Install dependencies',
+            );
+        });
+
+        it('should execute multiple install commands when provided', async () => {
+            const inputs: ActionInputs = {
+                ...createBasicInputs(),
+                installCmds: ['npm ci', 'npm audit fix'],
+            };
+
+            await deployAction(inputs);
+
+            expect(executeCommands).toHaveBeenCalledWith(
+                ['npm ci', 'npm audit fix'],
                 repoPath,
                 'Install dependencies',
             );
@@ -159,13 +174,28 @@ describe('Deploy Action', () => {
         it('should execute build command when provided', async () => {
             const inputs: ActionInputs = {
                 ...createBasicInputs(),
-                buildCmd: 'npm run build',
+                buildCmds: ['npm run build'],
             };
 
             await deployAction(inputs);
 
-            expect(executeCommand).toHaveBeenCalledWith(
-                'npm run build',
+            expect(executeCommands).toHaveBeenCalledWith(
+                ['npm run build'],
+                repoPath,
+                'Build application',
+            );
+        });
+
+        it('should execute multiple build commands when provided', async () => {
+            const inputs: ActionInputs = {
+                ...createBasicInputs(),
+                buildCmds: ['npm run lint', 'npm run build', 'npm run test'],
+            };
+
+            await deployAction(inputs);
+
+            expect(executeCommands).toHaveBeenCalledWith(
+                ['npm run lint', 'npm run build', 'npm run test'],
                 repoPath,
                 'Build application',
             );
@@ -278,26 +308,26 @@ describe('Deploy Action', () => {
 
     describe('error handling', () => {
         it('should fail if install command fails', async () => {
-            if (executeCommand) {
-                vi.mocked(executeCommand).mockRejectedValue(new Error('Install failed'));
+            if (executeCommands) {
+                vi.mocked(executeCommands).mockRejectedValue(new Error('Install failed'));
             }
 
             const inputs: ActionInputs = {
                 ...createBasicInputs(),
-                installCmd: 'npm install',
+                installCmds: ['npm install'],
             };
 
             await expect(deployAction(inputs)).rejects.toThrow('Install failed');
         });
 
         it('should fail if build command fails', async () => {
-            if (executeCommand) {
-                vi.mocked(executeCommand).mockRejectedValue(new Error('Build failed'));
+            if (executeCommands) {
+                vi.mocked(executeCommands).mockRejectedValue(new Error('Build failed'));
             }
 
             const inputs: ActionInputs = {
                 ...createBasicInputs(),
-                buildCmd: 'npm run build',
+                buildCmds: ['npm run build'],
             };
 
             await expect(deployAction(inputs)).rejects.toThrow('Build failed');

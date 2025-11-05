@@ -28,19 +28,19 @@ structure with a `current` junction pointing to the active version.
 
 ### Optional
 
-| Input                             | Description                                    | Default                   | Example                                           |
-| --------------------------------- | ---------------------------------------------- | ------------------------- | ------------------------------------------------- |
-| `repo_path`                       | Path to the repository                         | `${{ github.workspace }}` | `C:\actions\runner\_work\repo`                    |
-| `install_cmd`                     | Command to install dependencies                | -                         | `bun install`                                     |
-| `build_cmd`                       | Command to build the application               | -                         | `npm run build`                                   |
-| `dist_dir`                        | Relative path to built files directory         | -                         | `dist`, `build`                                   |
-| `pre_deploy_cmds`                 | JSON array of commands to run after deployment | -                         | `["bun install --production", "bun run migrate"]` |
-| `healthcheck_url`                 | URL for health check after deployment          | -                         | `http://localhost:8080/health`                    |
-| `expected_healthcheck_code_range` | Acceptable HTTP status code range              | `200-299`                 | `200-299`, `200-204`                              |
-| `healthcheck_timeout`             | Timeout in seconds for health check            | `30`                      | `60`                                              |
-| `healthcheck_retries`             | Number of health check retries                 | `3`                       | `5`                                               |
-| `healthcheck_delay`               | Delay before first health check (seconds)      | `5`                       | `10`                                              |
-| `healthcheck_interval`            | Interval between retries (seconds)             | `5`                       | `10`                                              |
+| Input                             | Description                                            | Default                   | Example                                           |
+| --------------------------------- | ------------------------------------------------------ | ------------------------- | ------------------------------------------------- |
+| `repo_path`                       | Path to the repository                                 | `${{ github.workspace }}` | `C:\actions\runner\_work\repo`                    |
+| `install_cmds`                    | Commands to install dependencies                       | -                         | `bun install` or multiline script                 |
+| `build_cmds`                      | Commands to build the application                      | -                         | `npm run build` or multiline script               |
+| `dist_dir`                        | Relative path to built files directory                 | -                         | `dist`, `build`                                   |
+| `pre_deploy_cmds`                 | Commands to run in release directory before activation | -                         | `["bun install --production", "bun run migrate"]` |
+| `healthcheck_url`                 | URL for health check after deployment                  | -                         | `http://localhost:8080/health`                    |
+| `expected_healthcheck_code_range` | Acceptable HTTP status code range                      | `200-299`                 | `200-299`, `200-204`                              |
+| `healthcheck_timeout`             | Timeout in seconds for health check                    | `30`                      | `60`                                              |
+| `healthcheck_retries`             | Number of health check retries                         | `3`                       | `5`                                               |
+| `healthcheck_delay`               | Delay before first health check (seconds)              | `5`                       | `10`                                              |
+| `healthcheck_interval`            | Interval between retries (seconds)                     | `5`                       | `10`                                              |
 
 ## Outputs
 
@@ -86,8 +86,8 @@ steps:
     with:
       app_name: my-app
       deploy_root: C:\apps\my-app
-      install_cmd: npm ci
-      build_cmd: npm run build
+      install_cmds: npm ci
+      build_cmds: npm run build
       dist_dir: dist
 ```
 
@@ -102,8 +102,8 @@ steps:
     with:
       app_name: orders-api
       deploy_root: C:\apps\orders-api
-      install_cmd: bun install
-      build_cmd: bun run build
+      install_cmds: bun install
+      build_cmds: bun run build
       dist_dir: dist
       pre_deploy_cmds: '["bun install --production", "bun run migrate"]'
       healthcheck_url: http://localhost:8080/health
@@ -111,6 +111,43 @@ steps:
       healthcheck_timeout: 30
       healthcheck_retries: 3
 ```
+
+### Deployment with Multiline Scripts
+
+Commands can also be specified using YAML multiline format for better readability:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+
+  - name: Deploy Application
+    uses: lucode/ploy@v1
+    with:
+      app_name: orders-api
+      deploy_root: C:\apps\orders-api
+      dist_dir: dist
+      pre_deploy_cmds: |
+        bun install --production
+        bun run migrate
+        echo Deployment prepared successfully
+      healthcheck_url: http://localhost:8080/health
+      healthcheck_retries: 5
+```
+
+## Command Input Formats
+
+The `install_cmds`, `build_cmds`, and `pre_deploy_cmds` inputs support multiple formats:
+
+1. **Single command string**: `install_cmds: bun install`
+2. **JSON array**: `pre_deploy_cmds: '["npm install", "npm run migrate"]'`
+3. **Multiline script** (one command per line):
+   ```yaml
+   pre_deploy_cmds: |
+     npm install --production
+     npm run migrate
+     # Comments are ignored
+     echo Setup complete
+   ```
 
 ## Deployment Flow
 
