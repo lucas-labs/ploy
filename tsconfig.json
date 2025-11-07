@@ -1,6 +1,6 @@
 {
-    "$schema": "https://json.schemastore.org/tsconfig",
     "compilerOptions": {
+        "baseUrl": ".",
         "lib": ["ESNext"],
         "target": "ESNext",
         "module": "es2022",
@@ -10,6 +10,9 @@
 
         // Bundler mode
         "moduleResolution": "bundler",
-        "noEmit": true
+        "noEmit": true,
+        "paths": {
+            "@/*": ["src/*"]
+        }
     }
 }
