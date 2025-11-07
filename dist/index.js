@@ -25575,6 +25575,35 @@ var external_util_ = __nccwpck_require__(9023);
 
 
 const execAsync = (0,external_util_.promisify)(external_child_process_.exec);
+let cachedPowerShell = undefined;
+/** detects if powershell is available */
+async function detectPowerShell() {
+    if (cachedPowerShell !== undefined) {
+        return cachedPowerShell;
+    }
+    if (process.platform !== 'win32') {
+        cachedPowerShell = null;
+        return null;
+    }
+    // try pwsh first
+    try {
+        await execAsync('pwsh.exe -Command "exit 0"');
+        cachedPowerShell = 'pwsh.exe';
+        return cachedPowerShell;
+    }
+    catch {
+        // dang! pwsh not available, try powershell
+        try {
+            await execAsync('powershell.exe -Command "exit 0"');
+            cachedPowerShell = 'powershell.exe';
+            return cachedPowerShell;
+        }
+        catch {
+            cachedPowerShell = null;
+            return null;
+        }
+    }
+}
 /**
  * Executes a shell command with proper error handling
  * Logs output and errors
@@ -25585,9 +25614,14 @@ async function executeCommand(command, cwd, description) {
     core.debug(`Command: ${command}`);
     core.debug(`Working directory: ${cwd}`);
     try {
-        const { stdout, stderr } = await execAsync(command, {
+        // use powershell if available
+        const powerShell = await detectPowerShell();
+        const shellCommand = powerShell
+            ? `${powerShell} -Command "${command.replace(/"/g, '`"')}"`
+            : command;
+        const { stdout, stderr } = await execAsync(shellCommand, {
             cwd,
-            maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+            maxBuffer: 10 * 1024 * 1024, // 10mb buffer
         });
         if (stdout) {
             core.info(stdout.trim());
