@@ -1,5 +1,5 @@
 import { expect, it, describe, afterEach, vi } from 'vitest';
-import { performHealthCheck } from '@/utils/healthcheck';
+import * as health from '@/utils/healthcheck';
 
 describe('Health Check Utilities', () => {
     // Mock fetch globally
@@ -10,21 +10,14 @@ describe('Health Check Utilities', () => {
         vi.restoreAllMocks();
     });
 
-    describe('performHealthCheck', () => {
+    describe('health.check', () => {
         it('should pass health check with status code in range', async () => {
             global.fetch = vi.fn().mockResolvedValue({
                 status: 200,
                 ok: true,
             } as Response);
 
-            const result = await performHealthCheck(
-                'http://example.com/health',
-                '200-299',
-                5,
-                3,
-                0,
-                1,
-            );
+            const result = await health.check('http://example.com/health', '200-299', 5, 3, 0, 1);
 
             expect(result.success).toBe(true);
             expect(result.statusCode).toBe(200);
@@ -37,14 +30,7 @@ describe('Health Check Utilities', () => {
                 ok: false,
             } as Response);
 
-            const result = await performHealthCheck(
-                'http://example.com/health',
-                '200-299',
-                5,
-                3,
-                0,
-                1,
-            );
+            const result = await health.check('http://example.com/health', '200-299', 5, 3, 0, 1);
 
             expect(result.success).toBe(false);
             expect(result.statusCode).toBe(500);
@@ -68,7 +54,7 @@ describe('Health Check Utilities', () => {
                 } as Response);
             });
 
-            const result = await performHealthCheck(
+            const result = await health.check(
                 'http://example.com/health',
                 '200-299',
                 5,
@@ -86,14 +72,7 @@ describe('Health Check Utilities', () => {
         it('should handle network errors', async () => {
             global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-            const result = await performHealthCheck(
-                'http://example.com/health',
-                '200-299',
-                5,
-                2,
-                0,
-                0,
-            );
+            const result = await health.check('http://example.com/health', '200-299', 5, 2, 0, 0);
 
             expect(result.success).toBe(false);
             expect(result.attempts).toBe(2);
@@ -108,7 +87,7 @@ describe('Health Check Utilities', () => {
                 return Promise.reject(error);
             });
 
-            const result = await performHealthCheck(
+            const result = await health.check(
                 'http://example.com/health',
                 '200-299',
                 1, // 1 second timeout
@@ -128,36 +107,15 @@ describe('Health Check Utilities', () => {
             } as Response);
 
             // Test 200-299 range (should pass)
-            const result1 = await performHealthCheck(
-                'http://example.com/health',
-                '200-299',
-                5,
-                1,
-                0,
-                0,
-            );
+            const result1 = await health.check('http://example.com/health', '200-299', 5, 1, 0, 0);
             expect(result1.success).toBe(true);
 
             // Test 200-200 range (should fail with 201)
-            const result2 = await performHealthCheck(
-                'http://example.com/health',
-                '200-200',
-                5,
-                1,
-                0,
-                0,
-            );
+            const result2 = await health.check('http://example.com/health', '200-200', 5, 1, 0, 0);
             expect(result2.success).toBe(false);
 
             // Test 201-201 range (should pass)
-            const result3 = await performHealthCheck(
-                'http://example.com/health',
-                '201-201',
-                5,
-                1,
-                0,
-                0,
-            );
+            const result3 = await health.check('http://example.com/health', '201-201', 5, 1, 0, 0);
             expect(result3.success).toBe(true);
         });
 
@@ -170,7 +128,7 @@ describe('Health Check Utilities', () => {
                     ok: true,
                 } as Response);
 
-                const promise = performHealthCheck(
+                const promise = health.check(
                     'http://example.com/health',
                     '200-299',
                     5,
@@ -199,7 +157,7 @@ describe('Health Check Utilities', () => {
                     ok: false,
                 } as Response);
 
-                const promise = performHealthCheck(
+                const promise = health.check(
                     'http://example.com/health',
                     '200-299',
                     5,
@@ -227,7 +185,7 @@ describe('Health Check Utilities', () => {
             } as Response);
 
             await expect(
-                performHealthCheck('http://example.com/health', 'invalid', 5, 1, 0, 0),
+                health.check('http://example.com/health', 'invalid', 5, 1, 0, 0),
             ).rejects.toThrow('Invalid health check code range');
         });
 
@@ -243,7 +201,7 @@ describe('Health Check Utilities', () => {
                 } as Response);
             });
 
-            await performHealthCheck('http://example.com/health', '200-299', 5, 1, 0, 0);
+            await health.check('http://example.com/health', '200-299', 5, 1, 0, 0);
 
             expect(abortSignalReceived).toBe(true);
         });

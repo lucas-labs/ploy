@@ -11,6 +11,7 @@ const getInputs = (): ActionInputs => {
     // optional inputs with defaults
     const repoPath = core.getInput('repo_path') || process.cwd();
     const distDir = core.getInput('dist_dir') || undefined;
+    const mode = core.getInput('mode') || 'default';
 
     // command inputs - all support multiple formats
     const installCmdsInput = core.getInput('install_cmds');
@@ -35,6 +36,7 @@ const getInputs = (): ActionInputs => {
         appName,
         deployRoot,
         repoPath,
+        mode,
         installCmds,
         buildCmds,
         distDir,

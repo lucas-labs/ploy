@@ -1,14 +1,11 @@
 import * as core from '@actions/core';
 import { promises as fs } from 'fs';
-import * as path from 'path';
 
-/**
- * Checks if a path is a junction point
- */
+/** checks if a path is a junction point */
 export async function isJunction(targetPath: string): Promise<boolean> {
     try {
         const stats = await fs.lstat(targetPath);
-        // On Windows, junctions are symbolic links
+        // on windows, nodejs returns isSymbolicLink true for junctions as well
         return stats.isSymbolicLink();
     } catch (error: unknown) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
@@ -18,16 +15,12 @@ export async function isJunction(targetPath: string): Promise<boolean> {
     }
 }
 
-/**
- * Creates a Windows junction point
- * Uses the mklink command on Windows
- */
-export async function createJunction(junctionPath: string, targetPath: string): Promise<void> {
+/** creates a Windows junction point */
+export async function create(junctionPath: string, targetPath: string): Promise<void> {
     core.info(`Creating junction: ${junctionPath} -> ${targetPath}`);
 
     try {
-        // On Windows, we use mklink /J
-        // Note: fs.symlink with 'junction' type should work, but we'll use it for better Windows compatibility
+        // create the junction (symlink with type 'junction')
         await fs.symlink(targetPath, junctionPath, 'junction');
         core.info('Junction created successfully');
     } catch (error) {
@@ -37,14 +30,11 @@ export async function createJunction(junctionPath: string, targetPath: string): 
     }
 }
 
-/**
- * Removes a junction point (but not the target directory)
- */
-export async function removeJunction(junctionPath: string): Promise<void> {
+/** removes a junction point (but not the target directory) */
+export async function remove(junctionPath: string): Promise<void> {
     core.info(`Removing junction: ${junctionPath}`);
 
     try {
-        // Use fs.unlink to remove the junction (not rmdir, which would delete the target)
         await fs.unlink(junctionPath);
         core.info('Junction removed successfully');
     } catch (error: unknown) {
@@ -58,41 +48,38 @@ export async function removeJunction(junctionPath: string): Promise<void> {
     }
 }
 
-/**
- * Updates the current junction to point to a new release
- * Performs safety checks before updating
- */
-export async function updateCurrentJunction(
-    deployRoot: string,
-    newReleasePath: string,
-): Promise<string> {
-    const currentPath = path.join(deployRoot, 'current');
+/** Updates the current junction to point to another path. */
+export async function update(junctionPath: string, newPath: string): Promise<void> {
+    core.info(`Updating ${junctionPath} junction to: ${newPath}`);
 
-    core.info(`Updating current junction to: ${newReleasePath}`);
-
-    // Check if current exists
     const exists = await fs
-        .access(currentPath)
+        .access(junctionPath)
         .then(() => true)
         .catch(() => false);
 
     if (exists) {
-        // Safety check: ensure it's actually a junction
-        const isJunc = await isJunction(currentPath);
-        if (!isJunc) {
+        // if it exists, ensure it's actually a junction before removing
+        if (!(await isJunction(junctionPath))) {
             throw new Error(
-                `Safety check failed: ${currentPath} exists but is not a junction. ` +
-                    `Manual intervention required to avoid data loss.`,
+                `${junctionPath} exists but is not a junction. Manual intervention required to avoid data loss.`,
             );
         }
 
-        // Remove the existing junction
-        await removeJunction(currentPath);
+        // all good, remove existing junction
+        await remove(junctionPath);
     }
 
-    // Create new junction
-    await createJunction(currentPath, newReleasePath);
+    // create the new junction, pointing to the new path
+    await create(junctionPath, newPath);
+    core.info(`Junction ${junctionPath} updated successfully`);
+}
 
-    core.info(`Current junction updated successfully`);
-    return currentPath;
+/** try to get the target path of a junction */
+export async function getTarget(junctionPath: string): Promise<string | undefined> {
+    try {
+        const target = await fs.readlink(junctionPath);
+        return target.replace(/[\\]+$/, '');
+    } catch {
+        return undefined;
+    }
 }

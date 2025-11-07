@@ -12,6 +12,10 @@ inputs:
     description: 'Path to the repository (defaults to current working directory)'
     required: false
     default: ${{ github.workspace }}
+  mode:
+    description: 'Deployment mode'
+    required: false
+    default: 'default'
   install_cmds:
     description: 'Script to install dependencies (e.g., "npm install", "bun install"). Also supports multiline format.'
     required: false
@@ -23,6 +27,9 @@ inputs:
     required: false
   pre_deploy_cmds:
     description: 'Script to run in the release directory before activation. Supports: single command string, JSON array ["cmd1", "cmd2"], or multiline script (one command per line).'
+    required: false
+  post_deploy_cmds:
+    description: 'Script to run in the release directory after activation. Supports: single command string, JSON array ["cmd1", "cmd2"], or multiline script (one command per line).'
     required: false
   healthcheck_url:
     description: 'URL to perform a health check after deployment'

@@ -15,11 +15,10 @@ export default defineConfig([
     },
     { files: ['**/*.js'], languageOptions: { sourceType: 'script' } },
     ...tseslint.configs.recommended,
-    // disable @typescript-eslint/no-explicit-any
-    // {
-    // files: ['**/*.{ts,mts,cts}'],
-    // rules: {
-    // '@typescript-eslint/no-explicit-any': 'off',
-    // },
-    // },
+    {
+        files: ['**/*.{ts,mts,cts}'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
 ]);

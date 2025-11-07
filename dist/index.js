@@ -25555,193 +25555,17 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 8163:
+/***/ 76:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  e: () => (/* binding */ run)
+  e: () => (/* binding */ run_run)
 });
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7484);
-// EXTERNAL MODULE: external "fs"
-var external_fs_ = __nccwpck_require__(9896);
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(6928);
-;// CONCATENATED MODULE: ./src/utils/dirs/index.ts
-
-
-
-/**
- * Ensures the deploy root directory exists and is writable
- * Creates the directory structure: deploy_root/releases/
- */
-async function ensureDeployRoot(deployRoot) {
-    core.info(`Ensuring deploy root exists: ${deployRoot}`);
-    try {
-        // Check if deploy_root exists
-        const stats = await external_fs_.promises.stat(deployRoot).catch(() => null);
-        if (!stats) {
-            // Create deploy_root if it doesn't exist
-            core.info(`Creating deploy root: ${deployRoot}`);
-            await external_fs_.promises.mkdir(deployRoot, { recursive: true });
-        }
-        else if (!stats.isDirectory()) {
-            throw new Error(`Deploy root exists but is not a directory: ${deployRoot}`);
-        }
-        // Test write access by creating and deleting a temp file
-        const testFile = external_path_.join(deployRoot, '.write-test');
-        await external_fs_.promises.writeFile(testFile, '');
-        await external_fs_.promises.unlink(testFile);
-        core.info('Deploy root is writable');
-        // Ensure releases subdirectory exists
-        const releasesDir = external_path_.join(deployRoot, 'releases');
-        await external_fs_.promises.mkdir(releasesDir, { recursive: true });
-        core.info(`Releases directory ready: ${releasesDir}`);
-    }
-    catch (error) {
-        throw new Error(`Failed to setup deploy root: ${error instanceof Error ? error.message : String(error)}`);
-    }
-}
-/**
- * Validates that a directory exists
- */
-async function validateDirectory(dirPath, name) {
-    try {
-        const stats = await fs.stat(dirPath);
-        if (!stats.isDirectory()) {
-            throw new Error(`${name} exists but is not a directory: ${dirPath}`);
-        }
-    }
-    catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-            throw new Error(`${name} does not exist: ${dirPath}`);
-        }
-        throw error;
-    }
-}
-/**
- * Creates a new release directory with timestamp-sha format
- */
-async function createReleaseDirectory(deployRoot, timestamp, shortSha) {
-    const releaseId = `${timestamp}-${shortSha}`;
-    const releasePath = external_path_.join(deployRoot, 'releases', releaseId);
-    core.info(`Creating release directory: ${releasePath}`);
-    try {
-        await external_fs_.promises.mkdir(releasePath, { recursive: true });
-        return releasePath;
-    }
-    catch (error) {
-        throw new Error(`Failed to create release directory: ${error instanceof Error ? error.message : String(error)}`);
-    }
-}
-/**
- * Gets the previous release path by reading the current junction
- */
-async function getPreviousRelease(deployRoot) {
-    const currentPath = external_path_.join(deployRoot, 'current');
-    try {
-        const target = await external_fs_.promises.readlink(currentPath);
-        // Normalize the path to remove trailing backslashes on Windows
-        const normalizedTarget = target.replace(/[\\]+$/, '');
-        core.info(`Previous release: ${normalizedTarget}`);
-        return normalizedTarget;
-    }
-    catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-            core.info('No previous release found (current junction does not exist)');
-            return undefined;
-        }
-        // If readlink fails for other reasons, it might not be a junction
-        core.warning(`Could not read previous release: ${error instanceof Error ? error.message : String(error)}`);
-        return undefined;
-    }
-}
-
-;// CONCATENATED MODULE: ./src/utils/junction/index.ts
-
-
-
-/**
- * Checks if a path is a junction point
- */
-async function isJunction(targetPath) {
-    try {
-        const stats = await external_fs_.promises.lstat(targetPath);
-        // On Windows, junctions are symbolic links
-        return stats.isSymbolicLink();
-    }
-    catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-            return false;
-        }
-        throw error;
-    }
-}
-/**
- * Creates a Windows junction point
- * Uses the mklink command on Windows
- */
-async function createJunction(junctionPath, targetPath) {
-    core.info(`Creating junction: ${junctionPath} -> ${targetPath}`);
-    try {
-        // On Windows, we use mklink /J
-        // Note: fs.symlink with 'junction' type should work, but we'll use it for better Windows compatibility
-        await external_fs_.promises.symlink(targetPath, junctionPath, 'junction');
-        core.info('Junction created successfully');
-    }
-    catch (error) {
-        throw new Error(`Failed to create junction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-}
-/**
- * Removes a junction point (but not the target directory)
- */
-async function removeJunction(junctionPath) {
-    core.info(`Removing junction: ${junctionPath}`);
-    try {
-        // Use fs.unlink to remove the junction (not rmdir, which would delete the target)
-        await external_fs_.promises.unlink(junctionPath);
-        core.info('Junction removed successfully');
-    }
-    catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-            core.info('Junction does not exist, nothing to remove');
-            return;
-        }
-        throw new Error(`Failed to remove junction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-}
-/**
- * Updates the current junction to point to a new release
- * Performs safety checks before updating
- */
-async function updateCurrentJunction(deployRoot, newReleasePath) {
-    const currentPath = external_path_.join(deployRoot, 'current');
-    core.info(`Updating current junction to: ${newReleasePath}`);
-    // Check if current exists
-    const exists = await external_fs_.promises
-        .access(currentPath)
-        .then(() => true)
-        .catch(() => false);
-    if (exists) {
-        // Safety check: ensure it's actually a junction
-        const isJunc = await isJunction(currentPath);
-        if (!isJunc) {
-            throw new Error(`Safety check failed: ${currentPath} exists but is not a junction. ` +
-                `Manual intervention required to avoid data loss.`);
-        }
-        // Remove the existing junction
-        await removeJunction(currentPath);
-    }
-    // Create new junction
-    await createJunction(currentPath, newReleasePath);
-    core.info(`Current junction updated successfully`);
-    return currentPath;
-}
-
 // EXTERNAL MODULE: external "child_process"
 var external_child_process_ = __nccwpck_require__(5317);
 // EXTERNAL MODULE: external "util"
@@ -25800,117 +25624,28 @@ async function executeCommands(commands, cwd, description) {
     core.info(`All ${description} completed successfully`);
 }
 
-;// CONCATENATED MODULE: ./src/utils/healthcheck/index.ts
+;// CONCATENATED MODULE: ./src/action/steps/common/build.step.ts
 
-/**
- * Parses a health check code range string (e.g., "200-299") into min and max values
- */
-function parseCodeRange(range) {
-    const parts = range.split('-').map((p) => parseInt(p.trim(), 10));
-    if (parts.length !== 2 || parts.some((p) => isNaN(p))) {
-        throw new Error(`Invalid health check code range: ${range}. Expected format: "200-299"`);
-    }
-    return { min: parts[0], max: parts[1] };
-}
-/**
- * Checks if a status code is within the expected range
- */
-function isStatusCodeInRange(statusCode, range) {
-    const { min, max } = parseCodeRange(range);
-    return statusCode >= min && statusCode <= max;
-}
-/**
- * Performs a single health check HTTP request
- */
-async function performHealthCheckRequest(url, timeout) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
-    try {
-        const response = await fetch(url, {
-            signal: controller.signal,
-            method: 'GET',
-        });
-        clearTimeout(timeoutId);
-        return {
-            statusCode: response.status,
-            success: response.ok,
-        };
-    }
-    catch (error) {
-        clearTimeout(timeoutId);
-        if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
-            return {
-                statusCode: 0,
-                success: false,
-                error: `Request timed out after ${timeout} seconds`,
-            };
-        }
-        return {
-            statusCode: 0,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-        };
-    }
-}
-/**
- * Waits for a specified number of seconds
- */
-function sleep(seconds) {
-    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-}
-/**
- * Performs a health check with retry logic
- */
-async function performHealthCheck(url, expectedCodeRange, timeout, retries, delay, interval) {
-    core.info(`Starting health check: ${url}`);
-    core.info(`Expected status code range: ${expectedCodeRange}`);
-    core.info(`Timeout: ${timeout}s, Retries: ${retries}, Delay: ${delay}s, Interval: ${interval}s`);
-    // Initial delay before first attempt
-    if (delay > 0) {
-        core.info(`Waiting ${delay} seconds before first health check attempt...`);
-        await sleep(delay);
-    }
-    let lastStatusCode;
-    let lastError;
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        core.info(`Health check attempt ${attempt}/${retries}...`);
-        const result = await performHealthCheckRequest(url, timeout);
-        lastStatusCode = result.statusCode;
-        if (result.error) {
-            lastError = result.error;
-            core.warning(`Attempt ${attempt} failed: ${result.error}`);
-        }
-        else {
-            core.info(`Received status code: ${result.statusCode}`);
-            if (isStatusCodeInRange(result.statusCode, expectedCodeRange)) {
-                core.info(`✓ Health check passed on attempt ${attempt}`);
-                return {
-                    success: true,
-                    statusCode: result.statusCode,
-                    attempts: attempt,
-                };
-            }
-            else {
-                lastError = `Status code ${result.statusCode} is outside expected range ${expectedCodeRange}`;
-                core.warning(`Attempt ${attempt} failed: ${lastError}`);
-            }
-        }
-        // Wait before next attempt (unless this was the last attempt)
-        if (attempt < retries) {
-            core.info(`Waiting ${interval} seconds before next attempt...`);
-            await sleep(interval);
-        }
-    }
-    // All attempts failed
-    core.error(`✗ Health check failed after ${retries} attempts`);
-    return {
-        success: false,
-        statusCode: lastStatusCode,
-        attempts: retries,
-        error: lastError || 'Health check failed',
-    };
-}
 
+const run = async (ctx) => {
+    if (ctx.inputs.buildCmds && ctx.inputs.buildCmds.length > 0) {
+        return executeCommands(ctx.inputs.buildCmds, ctx.inputs.repoPath, 'Build application');
+    }
+    else {
+        core.info('Build Application Skipped (no build_cmds provided)');
+    }
+};
+/** Build the application by executing the specified build commands in the repository path */
+/* harmony default export */ const build_step = ({
+    moji: '🔨',
+    description: 'Build Application',
+    run,
+});
+
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(9896);
+// EXTERNAL MODULE: external "path"
+var external_path_ = __nccwpck_require__(6928);
 ;// CONCATENATED MODULE: ./src/utils/files/index.ts
 
 
@@ -26020,16 +25755,314 @@ async function copyFiles(repoPath, releasePath, distDir) {
     }
 }
 
-;// CONCATENATED MODULE: ./src/action/subactions/deploy/action.ts
+;// CONCATENATED MODULE: ./src/action/steps/common/copy-files.step.ts
 
 
+const copy_files_step_run = async (ctx) => {
+    const releasePath = ctx.outputs.releasePath;
+    if (!releasePath) {
+        throw new Error('Release path is not defined in context outputs.');
+    }
+    core.info(`Copying files from '${ctx.inputs.distDir ? ctx.inputs.distDir : ctx.inputs.repoPath}' to release directory`);
+    await copyFiles(ctx.inputs.repoPath, releasePath, ctx.inputs.distDir);
+    core.info('Files copied successfully');
+};
+/**
+ * Copy application files from the repository (or specified distribution directory) to the newly
+ * created release directory.
+ *
+ * If a `dist_dir` is specified, files will be copied from that directory inside the repository.
+ * Otherwise, files will be copied from the root of the repository.
+ */
+/* harmony default export */ const copy_files_step = ({
+    moji: '📋',
+    description: 'Copy Files to Release Directory',
+    run: copy_files_step_run,
+});
 
+;// CONCATENATED MODULE: external "node:fs/promises"
+const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs/promises");
+var promises_default = /*#__PURE__*/__nccwpck_require__.n(promises_namespaceObject);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: ./src/action/steps/common/env-setup.step.ts
 
 
 
 /**
- * Generates a timestamp in YYYYMMDD-HHMMSS format
+ * ensures the deploy root directory exists and is writable;
+ * Creates the directory structure: deploy_root/releases/
  */
+async function ensureDeployRoot(deployRoot) {
+    core.info(`Ensuring deploy root exists: ${deployRoot}`);
+    try {
+        // check if deploy_root exists
+        const stats = await promises_default().stat(deployRoot).catch(() => null);
+        if (!stats) {
+            // does not exist, let's create it
+            core.info(`Creating deploy root: ${deployRoot}`);
+            await promises_default().mkdir(deployRoot, { recursive: true });
+        }
+        else if (!stats.isDirectory()) {
+            throw new Error(`Deploy root exists but is not a directory: ${deployRoot}`);
+        }
+        // test write access by creating and deleting a temp file
+        const testFile = external_node_path_default().join(deployRoot, '.write-test');
+        await promises_default().writeFile(testFile, '');
+        await promises_default().unlink(testFile);
+        core.info('Deploy root is writable');
+        // ensure releases subdirectory exists
+        const releasesDir = external_node_path_default().join(deployRoot, 'releases');
+        await promises_default().mkdir(releasesDir, { recursive: true });
+        core.info(`Releases directory ready: ${releasesDir}`);
+    }
+    catch (error) {
+        throw new Error(`Failed to setup deploy root: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+const env_setup_step_run = async (context) => {
+    return ensureDeployRoot(context.inputs.deployRoot);
+};
+/**
+ * Setup the deployment environment:
+ * - Ensures the deploy root directory exists and is writable
+ * - Creates the releases subdirectory if it does not yet exist
+ */
+/* harmony default export */ const env_setup_step = ({
+    moji: '📁',
+    description: 'Environment Setup',
+    run: env_setup_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/utils/healthcheck/index.ts
+
+/** parses an http code range string (e.g., "200-299") into min and max values */
+function parseCodeRange(range) {
+    const parts = range.split('-').map((p) => parseInt(p.trim(), 10));
+    if (parts.length !== 2 || parts.some((p) => isNaN(p))) {
+        throw new Error(`Invalid health check code range: ${range}. Expected format: "200-299"`);
+    }
+    return { min: parts[0], max: parts[1] };
+}
+/** checks if a status code is within the expected range */
+function isStatusCodeInRange(statusCode, range) {
+    const { min, max } = parseCodeRange(range);
+    return statusCode >= min && statusCode <= max;
+}
+/** performs a single health check HTTP request */
+async function performHealthCheckRequest(url, timeout) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
+    try {
+        const response = await fetch(url, {
+            signal: controller.signal,
+            method: 'GET',
+        });
+        clearTimeout(timeoutId);
+        return {
+            statusCode: response.status,
+            success: response.ok,
+        };
+    }
+    catch (error) {
+        clearTimeout(timeoutId);
+        if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+            return {
+                statusCode: 0,
+                success: false,
+                error: `Request timed out after ${timeout} seconds`,
+            };
+        }
+        return {
+            statusCode: 0,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
+}
+function sleep(seconds) {
+    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+}
+/** performs a health check with retry logic */
+async function check(url, expectedCodeRange, timeout, retries, delay, interval) {
+    core.info(`Starting health check: ${url}`);
+    core.info(`Expected status code range: ${expectedCodeRange}`);
+    core.info(`Timeout: ${timeout}s, Retries: ${retries}, Delay: ${delay}s, Interval: ${interval}s`);
+    // initial delay before first attempt
+    if (delay > 0) {
+        core.info(`Waiting ${delay} seconds before first health check attempt...`);
+        await sleep(delay);
+    }
+    let lastStatusCode;
+    let lastError;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        core.info(`Health check attempt ${attempt}/${retries}...`);
+        const result = await performHealthCheckRequest(url, timeout);
+        lastStatusCode = result.statusCode;
+        if (result.error) {
+            lastError = result.error;
+            core.warning(`Attempt ${attempt} failed: ${result.error}`);
+        }
+        else {
+            core.info(`Received status code: ${result.statusCode}`);
+            if (isStatusCodeInRange(result.statusCode, expectedCodeRange)) {
+                core.info(`✓ Health check passed on attempt ${attempt}`);
+                return {
+                    success: true,
+                    statusCode: result.statusCode,
+                    attempts: attempt,
+                };
+            }
+            else {
+                lastError = `Status code ${result.statusCode} is outside expected range ${expectedCodeRange}`;
+                core.warning(`Attempt ${attempt} failed: ${lastError}`);
+            }
+        }
+        // wait before next attempt (unless this was the last attempt)
+        if (attempt < retries) {
+            core.info(`Waiting ${interval} seconds before next attempt...`);
+            await sleep(interval);
+        }
+    }
+    // all attempts failed
+    core.error(`✗ Health check failed after ${retries} attempts`);
+    return {
+        success: false,
+        statusCode: lastStatusCode,
+        attempts: retries,
+        error: lastError || 'Health check failed',
+    };
+}
+
+;// CONCATENATED MODULE: ./src/action/steps/common/healthcheck.step.ts
+
+
+const healthcheck_step_run = async (ctx) => {
+    if (ctx.inputs.healthcheckUrl) {
+        core.startGroup('🏥 Step 7: Health Check');
+        const healthCheck = await check(ctx.inputs.healthcheckUrl, ctx.inputs.expectedHealthcheckCodeRange, ctx.inputs.healthcheckTimeout, ctx.inputs.healthcheckRetries, ctx.inputs.healthcheckDelay, ctx.inputs.healthcheckInterval);
+        ctx.outputs = {
+            ...ctx.outputs,
+            healthcheckStatus: healthCheck.success ? 'passed' : 'failed',
+            healthcheckCode: healthCheck.statusCode,
+            healthcheckAttempts: healthCheck.attempts,
+        };
+        if (!healthCheck.success) {
+            throw new Error(`Health check failed: ${healthCheck.error}`);
+        }
+    }
+    else {
+        core.info('Health Check Skipped (no healthcheck_url provided)');
+    }
+};
+/**
+ * Perform a health check on the deployed application by sending requests to the specified URL
+ * and verifying the response status code is within the expected range.
+ */
+/* harmony default export */ const healthcheck_step = ({
+    moji: '🏥',
+    description: 'Health Check',
+    run: healthcheck_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/action/steps/common/install-deps.step.ts
+
+
+const install_deps_step_run = async (ctx) => {
+    if (ctx.inputs.installCmds && ctx.inputs.installCmds.length > 0) {
+        return executeCommands(ctx.inputs.installCmds, ctx.inputs.repoPath, 'Install dependencies');
+    }
+    else {
+        core.info('Install Dependencies Skipped (no install_cmds provided)');
+    }
+};
+/**
+ * Install project dependencies in the repository path (repo where the code is checked out)
+ * by executing the specified installation commands.
+ *
+ * This step is typically used to run package managers like npm, yarn, bun, etc. before building
+ * the application.
+ *
+ * *optional, will not run if no `install_cmds` are provided*
+ */
+/* harmony default export */ const install_deps_step = ({
+    moji: '📦',
+    description: 'Install Dependencies',
+    run: install_deps_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/action/steps/common/post-deploy-cmds.step.ts
+
+
+const post_deploy_cmds_step_run = async (ctx) => {
+    const releasePath = ctx.outputs.releasePath;
+    if (!releasePath) {
+        throw new Error('Release path is not defined in context outputs.');
+    }
+    if (ctx.inputs.postDeployCmds && ctx.inputs.postDeployCmds.length > 0) {
+        return await executeCommands(ctx.inputs.postDeployCmds, releasePath, 'Post-deploy commands');
+    }
+    else {
+        core.info('Execute Post-Deploy Commands Skipped (no post_deploy_cmds provided)');
+    }
+};
+/**
+ * Execute post-deployment commands in the newly created release directory.
+ *
+ * This step is typically used to perform tasks in the freshly created release directory, after
+ * it has become the active release (current junction points to it). Example:
+ *
+ * - Starting processes / services (e.g., starting the newly deployed application)
+ * - Running non-url based health checks or sanity checks
+ * - Notifying of successful deployment (e.g., sending messages to Slack, email, etc.)
+ *
+ * *optional, will not run if no `post_deploy_cmds` are provided*
+ */
+/* harmony default export */ const post_deploy_cmds_step = ({
+    moji: '⚙️',
+    description: 'Execute post-Deployment Commands',
+    run: post_deploy_cmds_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/action/steps/common/pre-deploy-cmds.step.ts
+
+
+const pre_deploy_cmds_step_run = async (ctx) => {
+    const releasePath = ctx.outputs.releasePath;
+    if (!releasePath) {
+        throw new Error('Release path is not defined in context outputs.');
+    }
+    if (ctx.inputs.preDeployCmds && ctx.inputs.preDeployCmds.length > 0) {
+        return await executeCommands(ctx.inputs.preDeployCmds, releasePath, 'Pre-deploy commands');
+    }
+    else {
+        core.info('Execute Pre-Deploy Commands Skipped (no pre_deploy_cmds provided)');
+    }
+};
+/**
+ * Execute pre-deployment commands in the newly created release directory.
+ *
+ * This step is typically used to perform tasks in the freshly created release directory, before
+ * it becomes the active release. Example:
+ *
+ * - Installing dependencies
+ * - Running database migrations
+ * - Stopping processes / services (e.g., stopping the running application to prepare for the new
+ *   version)
+ *
+ * *optional, will not run if no `pre_deploy_cmds` are provided*
+ */
+/* harmony default export */ const pre_deploy_cmds_step = ({
+    moji: '⚙️',
+    description: 'Execute Pre-Deployment Commands',
+    run: pre_deploy_cmds_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/action/steps/common/prepare-release-dir.step.ts
+
+
+
 function generateTimestamp() {
     const now = new Date();
     const year = now.getFullYear();
@@ -26040,114 +26073,222 @@ function generateTimestamp() {
     const seconds = String(now.getSeconds()).padStart(2, '0');
     return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
-/**
- * Gets the short SHA from the Git context
- */
+/** get the short SHA from the Git context */
 function getShortSha() {
-    // Try to get SHA from environment variables (GitHub/Gitea Actions)
     const sha = process.env.GITHUB_SHA || process.env.GITEA_SHA || process.env.CI_COMMIT_SHA || 'unknown';
     return sha.substring(0, 7);
 }
-/**
- * Main deployment action
- */
-async function deployAction(inputs) {
-    core.startGroup('🚀 Starting deployment');
-    core.info(`Application: ${inputs.appName}`);
-    core.info(`Deploy root: ${inputs.deployRoot}`);
-    core.info(`Repository path: ${inputs.repoPath}`);
-    core.endGroup();
-    // Step 1: Environment Setup
-    core.startGroup('📁 Step 1: Environment Setup');
-    await ensureDeployRoot(inputs.deployRoot);
-    core.endGroup();
-    // Step 2: Install Dependencies
-    if (inputs.installCmds && inputs.installCmds.length > 0) {
-        core.startGroup('📦 Step 2: Install Dependencies');
-        await executeCommands(inputs.installCmds, inputs.repoPath, 'Install dependencies');
-        core.endGroup();
+/** creates a new release directory */
+async function createReleaseDirectory(deployRoot, releaseId) {
+    const releasePath = external_node_path_default().join(deployRoot, 'releases', releaseId);
+    try {
+        await promises_default().mkdir(releasePath, { recursive: true });
+        return releasePath;
     }
-    else {
-        core.info('📦 Step 2: Install Dependencies - Skipped (no install_cmds provided)');
+    catch (error) {
+        throw new Error(`Failed to create release directory: ${error instanceof Error ? error.message : String(error)}`);
     }
-    // Step 3: Build Application
-    if (inputs.buildCmds && inputs.buildCmds.length > 0) {
-        core.startGroup('🔨 Step 3: Build Application');
-        await executeCommands(inputs.buildCmds, inputs.repoPath, 'Build application');
-        core.endGroup();
-    }
-    else {
-        core.info('🔨 Step 3: Build Application - Skipped (no build_cmds provided)');
-    }
-    // Step 4: Prepare Release Directory
-    core.startGroup('📂 Step 4: Prepare Release Directory');
+}
+const prepare_release_dir_step_run = async (ctx) => {
     const timestamp = generateTimestamp();
     const shortSha = getShortSha();
     const releaseId = `${timestamp}-${shortSha}`;
-    const releasePath = await createReleaseDirectory(inputs.deployRoot, timestamp, shortSha);
+    core.info('Creating release directory...');
+    const releasePath = await createReleaseDirectory(ctx.inputs.deployRoot, releaseId);
     core.info(`Release ID: ${releaseId}`);
     core.info(`Release path: ${releasePath}`);
-    // Copy files to release directory
-    await copyFiles(inputs.repoPath, releasePath, inputs.distDir);
-    core.endGroup();
-    // Step 5: Run Pre-Deploy Commands
-    if (inputs.preDeployCmds && inputs.preDeployCmds.length > 0) {
-        core.startGroup('⚙️  Step 5: Run Pre-Deploy Commands');
-        await executeCommands(inputs.preDeployCmds, releasePath, 'Pre-deploy commands');
-        core.endGroup();
+    // set outputs in context
+    ctx.outputs = { ...ctx.outputs, releaseId, releasePath };
+};
+/**
+ * Prepare the release directory by generating a unique release ID and creating the corresponding
+ * directory under `{deploy_root}/releases/`.
+ *
+ * The release ID is formed using the current timestamp and the short Git SHA:
+ * `YYYYMMDD-HHMMSS-SHORTSHA`
+ */
+/* harmony default export */ const prepare_release_dir_step = ({
+    moji: '📂',
+    description: 'Prepare Release Directory',
+    run: prepare_release_dir_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/utils/junction/index.ts
+
+
+/** checks if a path is a junction point */
+async function isJunction(targetPath) {
+    try {
+        const stats = await external_fs_.promises.lstat(targetPath);
+        // on windows, nodejs returns isSymbolicLink true for junctions as well
+        return stats.isSymbolicLink();
     }
-    else {
-        core.info('⚙️  Step 5: Run Pre-Deploy Commands - Skipped (no pre_deploy_cmds provided)');
-    }
-    // Step 6: Switch Active Release
-    core.startGroup('🔄 Step 6: Switch Active Release');
-    const previousRelease = await getPreviousRelease(inputs.deployRoot);
-    const currentJunction = await updateCurrentJunction(inputs.deployRoot, releasePath);
-    core.endGroup();
-    // Step 7: Health Check
-    let healthcheckStatus;
-    let healthcheckCode;
-    let healthcheckAttempts;
-    if (inputs.healthcheckUrl) {
-        core.startGroup('🏥 Step 7: Health Check');
-        const healthCheck = await performHealthCheck(inputs.healthcheckUrl, inputs.expectedHealthcheckCodeRange, inputs.healthcheckTimeout, inputs.healthcheckRetries, inputs.healthcheckDelay, inputs.healthcheckInterval);
-        healthcheckStatus = healthCheck.success ? 'passed' : 'failed';
-        healthcheckCode = healthCheck.statusCode;
-        healthcheckAttempts = healthCheck.attempts;
-        if (!healthCheck.success) {
-            core.endGroup();
-            throw new Error(`Health check failed: ${healthCheck.error}`);
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+            return false;
         }
-        core.endGroup();
+        throw error;
     }
-    else {
-        core.info('🏥 Step 7: Health Check - Skipped (no healthcheck_url provided)');
+}
+/** creates a Windows junction point */
+async function create(junctionPath, targetPath) {
+    core.info(`Creating junction: ${junctionPath} -> ${targetPath}`);
+    try {
+        // create the junction (symlink with type 'junction')
+        await external_fs_.promises.symlink(targetPath, junctionPath, 'junction');
+        core.info('Junction created successfully');
     }
-    // Generate outputs
-    const deploymentTime = new Date().toISOString();
+    catch (error) {
+        throw new Error(`Failed to create junction: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+/** removes a junction point (but not the target directory) */
+async function remove(junctionPath) {
+    core.info(`Removing junction: ${junctionPath}`);
+    try {
+        await external_fs_.promises.unlink(junctionPath);
+        core.info('Junction removed successfully');
+    }
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+            core.info('Junction does not exist, nothing to remove');
+            return;
+        }
+        throw new Error(`Failed to remove junction: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+/** Updates the current junction to point to another path. */
+async function update(junctionPath, newPath) {
+    core.info(`Updating ${junctionPath} junction to: ${newPath}`);
+    const exists = await external_fs_.promises
+        .access(junctionPath)
+        .then(() => true)
+        .catch(() => false);
+    if (exists) {
+        // if it exists, ensure it's actually a junction before removing
+        if (!(await isJunction(junctionPath))) {
+            throw new Error(`${junctionPath} exists but is not a junction. Manual intervention required to avoid data loss.`);
+        }
+        // all good, remove existing junction
+        await remove(junctionPath);
+    }
+    // create the new junction, pointing to the new path
+    await create(junctionPath, newPath);
+    core.info(`Junction ${junctionPath} updated successfully`);
+}
+/** try to get the target path of a junction */
+async function getTarget(junctionPath) {
+    try {
+        const target = await external_fs_.promises.readlink(junctionPath);
+        return target.replace(/[\\]+$/, '');
+    }
+    catch {
+        return undefined;
+    }
+}
+
+;// CONCATENATED MODULE: ./src/action/steps/common/switch-active-release.step.ts
+
+
+
+const switch_active_release_step_run = async (ctx) => {
+    const releasePath = ctx.outputs.releasePath;
+    if (!releasePath) {
+        throw new Error('Release path is not defined in context outputs.');
+    }
+    const currentPath = external_node_path_default().join(ctx.inputs.deployRoot, 'current');
+    const previousRelease = await getTarget(currentPath);
+    await update(currentPath, releasePath);
+    core.info(`Switched active release from '${previousRelease ?? 'none'}' to '${currentPath}'`);
+    ctx.outputs = { ...ctx.outputs, previousRelease, currentJunction: currentPath };
+};
+/**
+ * Switch the active release by updating the 'current' junction to point to the new release
+ * directory.
+ */
+/* harmony default export */ const switch_active_release_step = ({
+    moji: '🔄',
+    description: 'Switch Active Release',
+    run: switch_active_release_step_run,
+});
+
+;// CONCATENATED MODULE: ./src/action/modes/default.ts
+
+
+
+
+
+
+
+
+
+/** Default deployment mode; for when mode is set to 'default' or not specified. */
+/* harmony default export */ const modes_default = ({
+    name: 'default',
+    description: 'Default deployment mode',
+    steps: [
+        env_setup_step,
+        install_deps_step,
+        build_step,
+        prepare_release_dir_step,
+        copy_files_step,
+        pre_deploy_cmds_step,
+        switch_active_release_step,
+        post_deploy_cmds_step,
+        healthcheck_step,
+    ],
+});
+
+;// CONCATENATED MODULE: ./src/action/modes/index.ts
+
+/** get the deployment mode configuration based on the mode input */
+const get = (mode) => {
+    switch (mode) {
+        case 'default':
+            return modes_default;
+        default:
+            return modes_default;
+    }
+};
+/* harmony default export */ const modes = ({ get });
+
+;// CONCATENATED MODULE: ./src/action/steps/index.ts
+
+const summary = (ctx) => {
     core.startGroup('✅ Deployment Complete');
-    core.info(`Release ID: ${releaseId}`);
-    core.info(`Release path: ${releasePath}`);
-    core.info(`Current junction: ${currentJunction}`);
-    if (previousRelease) {
-        core.info(`Previous release: ${previousRelease}`);
+    core.info(`Release ID: ${ctx.outputs.releaseId}`);
+    core.info(`Release path: ${ctx.outputs.releasePath}`);
+    core.info(`Current junction: ${ctx.outputs.currentJunction}`);
+    if (ctx.outputs.previousRelease) {
+        core.info(`Previous release: ${ctx.outputs.previousRelease}`);
     }
-    core.info(`Deployment time: ${deploymentTime}`);
-    if (healthcheckStatus) {
-        core.info(`Health check: ${healthcheckStatus} (code: ${healthcheckCode}, attempts: ${healthcheckAttempts})`);
+    core.info(`Deployment time: ${ctx.outputs.deploymentTime}`);
+    if (ctx.outputs.healthcheckStatus) {
+        core.info(`Health check: ${ctx.outputs.healthcheckStatus} (code: ${ctx.outputs.healthcheckCode}, attempts: ${ctx.outputs.healthcheckAttempts})`);
     }
     core.endGroup();
-    return {
-        releasePath,
-        releaseId,
-        previousRelease,
-        deploymentTime,
-        healthcheckStatus,
-        healthcheckCode,
-        healthcheckAttempts,
-        currentJunction,
+    return;
+};
+/** runs the provided steps in sequence and returns the final outputs */
+const execute = async (steps, inputs) => {
+    const ctx = { inputs, outputs: {} };
+    const t0 = performance.now(); // to measure total deployment time
+    for (let i = 1; i <= steps.length; i++) {
+        const step = steps[i - 1];
+        core.startGroup(`${step.moji} Step ${i}: ${step.description}`);
+        await step.run(ctx);
+        core.endGroup();
+    }
+    ctx.outputs = {
+        ...ctx.outputs,
+        deploymentTime: new Date().toISOString(),
+        elapsed: (performance.now() - t0) / 1000,
     };
-}
+    // log summary
+    summary(ctx);
+    return ctx.outputs;
+};
+/* harmony default export */ const steps = ({ execute });
 
 ;// CONCATENATED MODULE: ./src/utils/commands/parse.ts
 /**
@@ -26208,6 +26349,7 @@ const getInputs = () => {
     // optional inputs with defaults
     const repoPath = core.getInput('repo_path') || process.cwd();
     const distDir = core.getInput('dist_dir') || undefined;
+    const mode = core.getInput('mode') || 'default';
     // command inputs - all support multiple formats
     const installCmdsInput = core.getInput('install_cmds');
     const installCmds = parseCommandInput(installCmdsInput, 'install_cmds');
@@ -26226,6 +26368,7 @@ const getInputs = () => {
         appName,
         deployRoot,
         repoPath,
+        mode,
         installCmds,
         buildCmds,
         distDir,
@@ -26263,13 +26406,12 @@ const setOutputs = (outputs) => {
 
 
 
+
 /** main entry point for the action */
-const run = async () => {
-    // Parse inputs
+const run_run = async () => {
     const inputs = getInputs();
-    // Execute deployment
-    const outputs = await deployAction(inputs);
-    // Set outputs
+    const mode = modes.get(inputs.mode);
+    const outputs = await steps.execute(mode.steps, inputs);
     setOutputs(outputs);
     core.info('🎉 Deployment completed successfully!');
 };
@@ -26283,7 +26425,7 @@ const run = async () => {
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8163);
+/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(76);
 
 
 try {

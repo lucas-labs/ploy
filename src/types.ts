@@ -2,10 +2,12 @@ export interface ActionInputs {
     appName: string;
     deployRoot: string;
     repoPath: string;
+    mode: string;
     installCmds?: string[];
     buildCmds?: string[];
     distDir?: string;
     preDeployCmds?: string[];
+    postDeployCmds?: string[];
     healthcheckUrl?: string;
     expectedHealthcheckCodeRange: string;
     healthcheckTimeout: number;
@@ -15,14 +17,20 @@ export interface ActionInputs {
 }
 
 export interface ActionOutputs {
-    releasePath: string;
-    releaseId: string;
+    releasePath?: string;
+    releaseId?: string;
     previousRelease?: string;
-    deploymentTime: string;
+    deploymentTime?: string;
     healthcheckStatus?: string;
     healthcheckCode?: number;
     healthcheckAttempts?: number;
-    currentJunction: string;
+    currentJunction?: string;
+    elapsed?: number;
+}
+
+export interface Context {
+    inputs: ActionInputs;
+    outputs: ActionOutputs;
 }
 
 export interface HealthCheckResult {
@@ -37,4 +45,16 @@ export interface ReleaseInfo {
     releasePath: string;
     timestamp: string;
     sha: string;
+}
+
+export interface Step {
+    moji: string;
+    description: string;
+    run: (inputs: Context) => Promise<any>;
+}
+
+export interface Mode {
+    name: string;
+    description: string;
+    steps: Step[];
 }

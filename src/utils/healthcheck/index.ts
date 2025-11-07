@@ -1,9 +1,7 @@
 import * as core from '@actions/core';
 import type { HealthCheckResult } from '@/types';
 
-/**
- * Parses a health check code range string (e.g., "200-299") into min and max values
- */
+/** parses an http code range string (e.g., "200-299") into min and max values */
 function parseCodeRange(range: string): { min: number; max: number } {
     const parts = range.split('-').map((p) => parseInt(p.trim(), 10));
 
@@ -14,17 +12,13 @@ function parseCodeRange(range: string): { min: number; max: number } {
     return { min: parts[0], max: parts[1] };
 }
 
-/**
- * Checks if a status code is within the expected range
- */
+/** checks if a status code is within the expected range */
 function isStatusCodeInRange(statusCode: number, range: string): boolean {
     const { min, max } = parseCodeRange(range);
     return statusCode >= min && statusCode <= max;
 }
 
-/**
- * Performs a single health check HTTP request
- */
+/** performs a single health check HTTP request */
 async function performHealthCheckRequest(
     url: string,
     timeout: number,
@@ -63,17 +57,12 @@ async function performHealthCheckRequest(
     }
 }
 
-/**
- * Waits for a specified number of seconds
- */
 function sleep(seconds: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-/**
- * Performs a health check with retry logic
- */
-export async function performHealthCheck(
+/** performs a health check with retry logic */
+export async function check(
     url: string,
     expectedCodeRange: string,
     timeout: number,
@@ -87,7 +76,7 @@ export async function performHealthCheck(
         `Timeout: ${timeout}s, Retries: ${retries}, Delay: ${delay}s, Interval: ${interval}s`,
     );
 
-    // Initial delay before first attempt
+    // initial delay before first attempt
     if (delay > 0) {
         core.info(`Waiting ${delay} seconds before first health check attempt...`);
         await sleep(delay);
@@ -121,14 +110,14 @@ export async function performHealthCheck(
             }
         }
 
-        // Wait before next attempt (unless this was the last attempt)
+        // wait before next attempt (unless this was the last attempt)
         if (attempt < retries) {
             core.info(`Waiting ${interval} seconds before next attempt...`);
             await sleep(interval);
         }
     }
 
-    // All attempts failed
+    // all attempts failed
     core.error(`✗ Health check failed after ${retries} attempts`);
     return {
         success: false,

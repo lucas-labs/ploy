@@ -1,12 +1,7 @@
 import { expect, it, describe, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import {
-    isJunction,
-    createJunction,
-    removeJunction,
-    updateCurrentJunction,
-} from '@/utils/junction';
+import { isJunction, create, remove, update, getTarget } from '@/utils/junction';
 
 describe('Junction Management Utilities', () => {
     let testDir: string;
@@ -58,13 +53,13 @@ describe('Junction Management Utilities', () => {
         });
     });
 
-    describe('createJunction', () => {
+    describe('create', () => {
         it('should create a junction successfully', async () => {
             const targetDir = path.join(testDir, 'target');
             await fs.mkdir(targetDir);
 
             const junctionPath = path.join(testDir, 'junction');
-            await createJunction(junctionPath, targetDir);
+            await create(junctionPath, targetDir);
 
             const exists = await fs
                 .access(junctionPath)
@@ -81,13 +76,13 @@ describe('Junction Management Utilities', () => {
             await fs.mkdir(targetDir);
 
             const junctionPath = path.join(testDir, 'junction');
-            await createJunction(junctionPath, targetDir);
+            await create(junctionPath, targetDir);
 
-            await expect(createJunction(junctionPath, targetDir)).rejects.toThrow();
+            await expect(create(junctionPath, targetDir)).rejects.toThrow();
         });
     });
 
-    describe('removeJunction', () => {
+    describe('remove', () => {
         it('should remove a junction successfully', async () => {
             const targetDir = path.join(testDir, 'target');
             await fs.mkdir(targetDir);
@@ -95,7 +90,7 @@ describe('Junction Management Utilities', () => {
             const junctionPath = path.join(testDir, 'junction');
             await fs.symlink(targetDir, junctionPath, 'junction');
 
-            await removeJunction(junctionPath);
+            await remove(junctionPath);
 
             const exists = await fs
                 .access(junctionPath)
@@ -114,7 +109,7 @@ describe('Junction Management Utilities', () => {
         it('should not throw if junction does not exist', async () => {
             const junctionPath = path.join(testDir, 'non-existent-junction');
 
-            await expect(removeJunction(junctionPath)).resolves.toBeUndefined();
+            await expect(remove(junctionPath)).resolves.toBeUndefined();
         });
 
         it('should not delete the target directory', async () => {
@@ -125,7 +120,7 @@ describe('Junction Management Utilities', () => {
             const junctionPath = path.join(testDir, 'junction');
             await fs.symlink(targetDir, junctionPath, 'junction');
 
-            await removeJunction(junctionPath);
+            await remove(junctionPath);
 
             // Target directory and its contents should still exist
             const fileContent = await fs.readFile(path.join(targetDir, 'test.txt'), 'utf-8');
@@ -133,36 +128,37 @@ describe('Junction Management Utilities', () => {
         });
     });
 
-    describe('updateCurrentJunction', () => {
+    describe('update', () => {
         it('should create new junction if current does not exist', async () => {
             const newRelease = path.join(testDir, 'releases', 'release-1');
             await fs.mkdir(newRelease, { recursive: true });
+            const junctionPath = path.join(testDir, 'current');
 
-            const currentPath = await updateCurrentJunction(testDir, newRelease);
+            await update(junctionPath, newRelease);
 
-            expect(currentPath).toBe(path.join(testDir, 'current'));
+            expect(junctionPath).toBe(path.join(testDir, 'current'));
 
-            const isJunc = await isJunction(currentPath);
+            const isJunc = await isJunction(junctionPath);
             expect(isJunc).toBe(true);
 
-            const target = await fs.readlink(currentPath);
+            const target = await fs.readlink(junctionPath);
             // Normalize path to handle Windows trailing backslash
             const normalizedTarget = target.replace(/[\\]+$/, '');
             expect(normalizedTarget).toBe(newRelease);
         });
 
-        it('should update existing junction to new release', async () => {
+        it('should update existing junction to new path', async () => {
             const oldRelease = path.join(testDir, 'releases', 'release-1');
             const newRelease = path.join(testDir, 'releases', 'release-2');
             await fs.mkdir(oldRelease, { recursive: true });
             await fs.mkdir(newRelease, { recursive: true });
 
-            const currentPath = path.join(testDir, 'current');
-            await fs.symlink(oldRelease, currentPath, 'junction');
+            const junctionPath = path.join(testDir, 'current');
+            await fs.symlink(oldRelease, junctionPath, 'junction');
 
-            await updateCurrentJunction(testDir, newRelease);
+            await update(junctionPath, newRelease);
 
-            const target = await fs.readlink(currentPath);
+            const target = await fs.readlink(junctionPath);
             // Normalize path to handle Windows trailing backslash
             const normalizedTarget = target.replace(/[\\]+$/, '');
             expect(normalizedTarget).toBe(newRelease);
@@ -175,9 +171,7 @@ describe('Junction Management Utilities', () => {
             const newRelease = path.join(testDir, 'releases', 'release-1');
             await fs.mkdir(newRelease, { recursive: true });
 
-            await expect(updateCurrentJunction(testDir, newRelease)).rejects.toThrow(
-                'is not a junction',
-            );
+            await expect(update(testDir, newRelease)).rejects.toThrow('is not a junction');
         });
 
         it('should preserve old release directory after update', async () => {
@@ -187,14 +181,40 @@ describe('Junction Management Utilities', () => {
             await fs.mkdir(newRelease, { recursive: true });
             await fs.writeFile(path.join(oldRelease, 'old.txt'), 'old content');
 
-            const currentPath = path.join(testDir, 'current');
-            await fs.symlink(oldRelease, currentPath, 'junction');
+            const junctionPath = path.join(testDir, 'current');
+            await fs.symlink(oldRelease, junctionPath, 'junction');
 
-            await updateCurrentJunction(testDir, newRelease);
+            await update(junctionPath, newRelease);
 
             // Old release should still exist
             const oldContent = await fs.readFile(path.join(oldRelease, 'old.txt'), 'utf-8');
             expect(oldContent).toBe('old content');
+        });
+    });
+
+    describe('getTarget', () => {
+        it('should return undefined if no current junction exists', async () => {
+            const previousRelease = await getTarget(testDir);
+            expect(previousRelease).toBeUndefined();
+        });
+
+        it('should return the target of current junction if it exists', async () => {
+            const targetDir = path.join(testDir, 'releases', 'release-1');
+            await fs.mkdir(targetDir, { recursive: true });
+            const junctionPath = path.join(testDir, 'current');
+            await fs.symlink(targetDir, junctionPath, 'junction');
+
+            const previousRelease = await getTarget(junctionPath);
+            expect(previousRelease).toBe(targetDir);
+        });
+
+        it('should handle non-junction file in current path gracefully', async () => {
+            await fs.mkdir(testDir, { recursive: true });
+            const currentPath = path.join(testDir, 'current');
+            await fs.writeFile(currentPath, 'not a junction');
+
+            const previousRelease = await getTarget(testDir);
+            expect(previousRelease).toBeUndefined();
         });
     });
 });

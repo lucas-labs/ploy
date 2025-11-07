@@ -8,9 +8,10 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import type { ActionInputs } from '@/types';
 import { executeCommand, executeCommands } from '@/utils/commands';
-import { performHealthCheck } from '@/utils/healthcheck';
+import * as health from '@/utils/healthcheck';
 import * as core from '@actions/core';
-import { deployAction } from '@/action/subactions/deploy/action';
+import modes from '@/action/modes';
+import steps from '@/action/steps';
 
 describe('Deploy Action', () => {
     let testDir: string;
@@ -50,13 +51,11 @@ describe('Deploy Action', () => {
         }
 
         // Mock health check to pass
-        if (performHealthCheck) {
-            vi.mocked(performHealthCheck).mockResolvedValue({
-                success: true,
-                statusCode: 200,
-                attempts: 1,
-            });
-        }
+        vi.mocked(health.check).mockResolvedValue({
+            success: true,
+            statusCode: 200,
+            attempts: 1,
+        });
 
         // Set environment variable for SHA
         process.env.GITHUB_SHA = 'abc1234567890';
@@ -78,6 +77,7 @@ describe('Deploy Action', () => {
         appName: 'test-app',
         deployRoot,
         repoPath,
+        mode: 'default',
         expectedHealthcheckCodeRange: '200-299',
         healthcheckTimeout: 30,
         healthcheckRetries: 3,
@@ -89,7 +89,7 @@ describe('Deploy Action', () => {
         it('should complete a basic deployment without optional steps', async () => {
             const inputs = createBasicInputs();
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.releasePath).toContain('releases');
             expect(outputs.releasePath).toContain('abc1234'.substring(0, 7));
@@ -101,10 +101,10 @@ describe('Deploy Action', () => {
         it('should create release directory with timestamp and SHA', async () => {
             const inputs = createBasicInputs();
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             const releaseExists = await fs
-                .access(outputs.releasePath)
+                .access(outputs.releasePath!)
                 .then(() => true)
                 .catch(() => false);
             expect(releaseExists).toBe(true);
@@ -113,16 +113,16 @@ describe('Deploy Action', () => {
         it('should copy files to release directory', async () => {
             const inputs = createBasicInputs();
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             const indexExists = await fs
-                .access(path.join(outputs.releasePath, 'index.js'))
+                .access(path.join(outputs.releasePath!, 'index.js'))
                 .then(() => true)
                 .catch(() => false);
             expect(indexExists).toBe(true);
 
             const packageExists = await fs
-                .access(path.join(outputs.releasePath, 'package.json'))
+                .access(path.join(outputs.releasePath!, 'package.json'))
                 .then(() => true)
                 .catch(() => false);
             expect(packageExists).toBe(true);
@@ -131,7 +131,7 @@ describe('Deploy Action', () => {
         it('should update current junction to new release', async () => {
             const inputs = createBasicInputs();
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             const currentPath = path.join(deployRoot, 'current');
             const target = await fs.readlink(currentPath);
@@ -147,7 +147,7 @@ describe('Deploy Action', () => {
                 installCmds: ['npm install'],
             };
 
-            await deployAction(inputs);
+            await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(executeCommands).toHaveBeenCalledWith(
                 ['npm install'],
@@ -162,7 +162,7 @@ describe('Deploy Action', () => {
                 installCmds: ['npm ci', 'npm audit fix'],
             };
 
-            await deployAction(inputs);
+            await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(executeCommands).toHaveBeenCalledWith(
                 ['npm ci', 'npm audit fix'],
@@ -177,7 +177,7 @@ describe('Deploy Action', () => {
                 buildCmds: ['npm run build'],
             };
 
-            await deployAction(inputs);
+            await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(executeCommands).toHaveBeenCalledWith(
                 ['npm run build'],
@@ -192,7 +192,7 @@ describe('Deploy Action', () => {
                 buildCmds: ['npm run lint', 'npm run build', 'npm run test'],
             };
 
-            await deployAction(inputs);
+            await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(executeCommands).toHaveBeenCalledWith(
                 ['npm run lint', 'npm run build', 'npm run test'],
@@ -212,17 +212,17 @@ describe('Deploy Action', () => {
                 distDir: 'dist',
             };
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             const bundleExists = await fs
-                .access(path.join(outputs.releasePath, 'bundle.js'))
+                .access(path.join(outputs.releasePath!, 'bundle.js'))
                 .then(() => true)
                 .catch(() => false);
             expect(bundleExists).toBe(true);
 
             // Source files should NOT be copied
             const indexExists = await fs
-                .access(path.join(outputs.releasePath, 'index.js'))
+                .access(path.join(outputs.releasePath!, 'index.js'))
                 .then(() => true)
                 .catch(() => false);
             expect(indexExists).toBe(false);
@@ -234,11 +234,11 @@ describe('Deploy Action', () => {
                 preDeployCmds: ['echo "pre-deploy"', 'echo "setup"'],
             };
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(executeCommands).toHaveBeenCalledWith(
                 ['echo "pre-deploy"', 'echo "setup"'],
-                outputs.releasePath,
+                outputs.releasePath!,
                 'Pre-deploy commands',
             );
         });
@@ -249,9 +249,9 @@ describe('Deploy Action', () => {
                 healthcheckUrl: 'http://localhost:3000/health',
             };
 
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
-            expect(performHealthCheck).toHaveBeenCalledWith(
+            expect(health.check).toHaveBeenCalledWith(
                 'http://localhost:3000/health',
                 '200-299',
                 30,
@@ -266,8 +266,8 @@ describe('Deploy Action', () => {
         });
 
         it('should throw error if health check fails', async () => {
-            if (performHealthCheck) {
-                vi.mocked(performHealthCheck).mockResolvedValue({
+            if (health.check) {
+                vi.mocked(health.check).mockResolvedValue({
                     success: false,
                     statusCode: 500,
                     attempts: 3,
@@ -280,7 +280,9 @@ describe('Deploy Action', () => {
                 healthcheckUrl: 'http://localhost:3000/health',
             };
 
-            await expect(deployAction(inputs)).rejects.toThrow('Health check failed');
+            await expect(steps.execute(modes.get(inputs.mode).steps, inputs)).rejects.toThrow(
+                'Health check failed',
+            );
         });
     });
 
@@ -293,14 +295,14 @@ describe('Deploy Action', () => {
             await fs.symlink(oldRelease, currentPath, 'junction');
 
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.previousRelease).toBe(oldRelease);
         });
 
         it('should have undefined previousRelease for first deployment', async () => {
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.previousRelease).toBeUndefined();
         });
@@ -317,7 +319,9 @@ describe('Deploy Action', () => {
                 installCmds: ['npm install'],
             };
 
-            await expect(deployAction(inputs)).rejects.toThrow('Install failed');
+            await expect(steps.execute(modes.get(inputs.mode).steps, inputs)).rejects.toThrow(
+                'Install failed',
+            );
         });
 
         it('should fail if build command fails', async () => {
@@ -330,7 +334,9 @@ describe('Deploy Action', () => {
                 buildCmds: ['npm run build'],
             };
 
-            await expect(deployAction(inputs)).rejects.toThrow('Build failed');
+            await expect(steps.execute(modes.get(inputs.mode).steps, inputs)).rejects.toThrow(
+                'Build failed',
+            );
         });
 
         it('should fail if pre-deploy commands fail', async () => {
@@ -343,14 +349,16 @@ describe('Deploy Action', () => {
                 preDeployCmds: ['failing-command'],
             };
 
-            await expect(deployAction(inputs)).rejects.toThrow('Pre-deploy failed');
+            await expect(steps.execute(modes.get(inputs.mode).steps, inputs)).rejects.toThrow(
+                'Pre-deploy failed',
+            );
         });
     });
 
     describe('timestamp and SHA generation', () => {
         it('should generate timestamp in correct format', async () => {
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.releaseId).toMatch(/^\d{8}-\d{6}-[a-f0-9]{7}$/);
         });
@@ -359,7 +367,7 @@ describe('Deploy Action', () => {
             process.env.GITHUB_SHA = 'deadbeef1234567890';
 
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.releaseId).toContain('deadbee');
         });
@@ -369,7 +377,7 @@ describe('Deploy Action', () => {
             process.env.GITEA_SHA = 'cafebabe1234567890';
 
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.releaseId).toContain('cafebab');
 
@@ -382,7 +390,7 @@ describe('Deploy Action', () => {
             delete process.env.CI_COMMIT_SHA;
 
             const inputs = createBasicInputs();
-            const outputs = await deployAction(inputs);
+            const outputs = await steps.execute(modes.get(inputs.mode).steps, inputs);
 
             expect(outputs.releaseId).toContain('unknown');
         });

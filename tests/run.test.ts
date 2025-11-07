@@ -1,10 +1,11 @@
 // Mock the dependencies
 vi.mock('@actions/core');
-vi.mock('@/action/subactions/deploy/action');
+vi.mock('@/action/steps');
 
 import { expect, it, describe, vi, beforeEach, afterEach } from 'vitest';
 import * as core from '@actions/core';
-import { deployAction } from '@/action/subactions/deploy/action';
+// import modes from '@/action/modes';
+import steps from '@/action/steps';
 import { run } from '@/action/run';
 
 describe('Action Run Function', () => {
@@ -36,14 +37,12 @@ describe('Action Run Function', () => {
             return defaults[name] || '';
         });
 
-        if (deployAction) {
-            vi.mocked(deployAction).mockResolvedValue({
-                releasePath: '/deploy/releases/20250104-143052-abc1234',
-                releaseId: '20250104-143052-abc1234',
-                deploymentTime: '2025-01-04T14:30:52.000Z',
-                currentJunction: '/deploy/current',
-            });
-        }
+        vi.mocked(steps.execute).mockResolvedValue({
+            releasePath: '/deploy/releases/20250104-143052-abc1234',
+            releaseId: '20250104-143052-abc1234',
+            deploymentTime: '2025-01-04T14:30:52.000Z',
+            currentJunction: '/deploy/current',
+        });
     });
 
     afterEach(() => {
@@ -68,7 +67,8 @@ describe('Action Run Function', () => {
 
             await run();
 
-            expect(deployAction).toHaveBeenCalledWith(
+            expect(steps.execute).toHaveBeenCalledWith(
+                expect.any(Array), // first param: steps array
                 expect.objectContaining({
                     appName: 'my-app',
                     deployRoot: '/var/www/deploy',
@@ -94,7 +94,8 @@ describe('Action Run Function', () => {
 
             await run();
 
-            expect(deployAction).toHaveBeenCalledWith(
+            expect(steps.execute).toHaveBeenCalledWith(
+                expect.any(Array),
                 expect.objectContaining({
                     repoPath: process.cwd(),
                 }),
@@ -121,7 +122,8 @@ describe('Action Run Function', () => {
 
             await run();
 
-            expect(deployAction).toHaveBeenCalledWith(
+            expect(steps.execute).toHaveBeenCalledWith(
+                expect.any(Array),
                 expect.objectContaining({
                     installCmds: ['npm install'],
                     buildCmds: ['npm run build'],
@@ -148,7 +150,8 @@ describe('Action Run Function', () => {
 
             await run();
 
-            expect(deployAction).toHaveBeenCalledWith(
+            expect(steps.execute).toHaveBeenCalledWith(
+                expect.any(Array),
                 expect.objectContaining({
                     preDeployCmds: ['npm install', 'npm test'],
                 }),
@@ -211,7 +214,8 @@ describe('Action Run Function', () => {
 
             await run();
 
-            expect(deployAction).toHaveBeenCalledWith(
+            expect(steps.execute).toHaveBeenCalledWith(
+                expect.any(Array),
                 expect.objectContaining({
                     healthcheckUrl: 'http://localhost:3000/health',
                     expectedHealthcheckCodeRange: '200-299',
@@ -241,18 +245,16 @@ describe('Action Run Function', () => {
         });
 
         it('should set optional outputs when present', async () => {
-            if (deployAction) {
-                vi.mocked(deployAction).mockResolvedValue({
-                    releasePath: '/deploy/releases/20250104-143052-abc1234',
-                    releaseId: '20250104-143052-abc1234',
-                    deploymentTime: '2025-01-04T14:30:52.000Z',
-                    currentJunction: '/deploy/current',
-                    previousRelease: '/deploy/releases/20250103-120000-xyz9876',
-                    healthcheckStatus: 'passed',
-                    healthcheckCode: 200,
-                    healthcheckAttempts: 1,
-                });
-            }
+            vi.mocked(steps.execute).mockResolvedValue({
+                releasePath: '/deploy/releases/20250104-143052-abc1234',
+                releaseId: '20250104-143052-abc1234',
+                deploymentTime: '2025-01-04T14:30:52.000Z',
+                currentJunction: '/deploy/current',
+                previousRelease: '/deploy/releases/20250103-120000-xyz9876',
+                healthcheckStatus: 'passed',
+                healthcheckCode: 200,
+                healthcheckAttempts: 1,
+            });
 
             await run();
 
@@ -285,15 +287,13 @@ describe('Action Run Function', () => {
         it('should call deployAction with parsed inputs and set outputs', async () => {
             await run();
 
-            expect(deployAction).toHaveBeenCalledTimes(1);
+            expect(steps.execute).toHaveBeenCalledTimes(1);
             expect(core.setOutput).toHaveBeenCalledTimes(4); // 4 required outputs
             expect(core.info).toHaveBeenCalledWith('🎉 Deployment completed successfully!');
         });
 
         it('should propagate errors from deployAction', async () => {
-            if (deployAction) {
-                vi.mocked(deployAction).mockRejectedValue(new Error('Deployment failed'));
-            }
+            vi.mocked(steps.execute).mockRejectedValue(new Error('Deployment failed'));
 
             await expect(run()).rejects.toThrow('Deployment failed');
         });
