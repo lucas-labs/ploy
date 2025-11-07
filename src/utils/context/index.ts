@@ -23,6 +23,9 @@ const getInputs = (): ActionInputs => {
     const preDeployCmdsInput = core.getInput('pre_deploy_cmds');
     const preDeployCmds = parseCommandInput(preDeployCmdsInput, 'pre_deploy_cmds');
 
+    const postDeployCmdsInput = core.getInput('post_deploy_cmds');
+    const postDeployCmds = parseCommandInput(postDeployCmdsInput, 'post_deploy_cmds');
+
     // health check inputs
     const healthcheckUrl = core.getInput('healthcheck_url') || undefined;
     const expectedHealthcheckCodeRange =
@@ -41,6 +44,7 @@ const getInputs = (): ActionInputs => {
         buildCmds,
         distDir,
         preDeployCmds,
+        postDeployCmds,
         healthcheckUrl,
         expectedHealthcheckCodeRange,
         healthcheckTimeout,

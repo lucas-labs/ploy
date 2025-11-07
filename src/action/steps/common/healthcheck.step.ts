@@ -4,7 +4,6 @@ import * as core from '@actions/core';
 
 const run: Step['run'] = async (ctx) => {
     if (ctx.inputs.healthcheckUrl) {
-        core.startGroup('🏥 Step 7: Health Check');
         const healthCheck = await health.check(
             ctx.inputs.healthcheckUrl,
             ctx.inputs.expectedHealthcheckCodeRange,

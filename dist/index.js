@@ -25940,7 +25940,6 @@ async function check(url, expectedCodeRange, timeout, retries, delay, interval) 
 
 const healthcheck_step_run = async (ctx) => {
     if (ctx.inputs.healthcheckUrl) {
-        core.startGroup('🏥 Step 7: Health Check');
         const healthCheck = await check(ctx.inputs.healthcheckUrl, ctx.inputs.expectedHealthcheckCodeRange, ctx.inputs.healthcheckTimeout, ctx.inputs.healthcheckRetries, ctx.inputs.healthcheckDelay, ctx.inputs.healthcheckInterval);
         ctx.outputs = {
             ...ctx.outputs,
@@ -26357,6 +26356,8 @@ const getInputs = () => {
     const buildCmds = parseCommandInput(buildCmdsInput, 'build_cmds');
     const preDeployCmdsInput = core.getInput('pre_deploy_cmds');
     const preDeployCmds = parseCommandInput(preDeployCmdsInput, 'pre_deploy_cmds');
+    const postDeployCmdsInput = core.getInput('post_deploy_cmds');
+    const postDeployCmds = parseCommandInput(postDeployCmdsInput, 'post_deploy_cmds');
     // health check inputs
     const healthcheckUrl = core.getInput('healthcheck_url') || undefined;
     const expectedHealthcheckCodeRange = core.getInput('expected_healthcheck_code_range') || '200-299';
@@ -26373,6 +26374,7 @@ const getInputs = () => {
         buildCmds,
         distDir,
         preDeployCmds,
+        postDeployCmds,
         healthcheckUrl,
         expectedHealthcheckCodeRange,
         healthcheckTimeout,
