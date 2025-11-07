@@ -6,7 +6,7 @@ import {
     validateDirectory,
     createReleaseDirectory,
     getPreviousRelease,
-} from '../src/action/utils/dirs';
+} from '@/utils/dirs';
 
 describe('Directory Management Utilities', () => {
     let testDir: string;

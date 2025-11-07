@@ -1,7 +1,7 @@
 import { expect, it, describe, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { copyFiles } from '../src/action/utils/files';
+import { copyFiles } from '@/utils/files';
 
 describe('File Management Utilities', () => {
     let testDir: string;

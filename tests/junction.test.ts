@@ -6,7 +6,7 @@ import {
     createJunction,
     removeJunction,
     updateCurrentJunction,
-} from '../src/action/utils/junction';
+} from '@/utils/junction';
 
 describe('Junction Management Utilities', () => {
     let testDir: string;

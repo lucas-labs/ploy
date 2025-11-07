@@ -13,7 +13,7 @@ vi.mock('child_process', () => {
 import { expect, it, describe, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { executeCommand, executeCommands } from '../src/action/utils/commands';
+import { executeCommand, executeCommands } from '@/utils/commands';
 import { exec } from 'child_process';
 import type { ChildProcess } from 'child_process';
 

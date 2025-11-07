@@ -25555,7 +25555,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 6327:
+/***/ 8163:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -25570,7 +25570,7 @@ var core = __nccwpck_require__(7484);
 var external_fs_ = __nccwpck_require__(9896);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(6928);
-;// CONCATENATED MODULE: ./src/action/utils/dirs/index.ts
+;// CONCATENATED MODULE: ./src/utils/dirs/index.ts
 
 
 
@@ -25660,7 +25660,7 @@ async function getPreviousRelease(deployRoot) {
     }
 }
 
-;// CONCATENATED MODULE: ./src/action/utils/junction/index.ts
+;// CONCATENATED MODULE: ./src/utils/junction/index.ts
 
 
 
@@ -25746,7 +25746,7 @@ async function updateCurrentJunction(deployRoot, newReleasePath) {
 var external_child_process_ = __nccwpck_require__(5317);
 // EXTERNAL MODULE: external "util"
 var external_util_ = __nccwpck_require__(9023);
-;// CONCATENATED MODULE: ./src/action/utils/commands/index.ts
+;// CONCATENATED MODULE: ./src/utils/commands/index.ts
 
 
 
@@ -25800,7 +25800,7 @@ async function executeCommands(commands, cwd, description) {
     core.info(`All ${description} completed successfully`);
 }
 
-;// CONCATENATED MODULE: ./src/action/utils/healthcheck/index.ts
+;// CONCATENATED MODULE: ./src/utils/healthcheck/index.ts
 
 /**
  * Parses a health check code range string (e.g., "200-299") into min and max values
@@ -25911,7 +25911,7 @@ async function performHealthCheck(url, expectedCodeRange, timeout, retries, dela
     };
 }
 
-;// CONCATENATED MODULE: ./src/action/utils/files/index.ts
+;// CONCATENATED MODULE: ./src/utils/files/index.ts
 
 
 
@@ -26149,7 +26149,7 @@ async function deployAction(inputs) {
     };
 }
 
-;// CONCATENATED MODULE: ./src/action/utils/commands/parse.ts
+;// CONCATENATED MODULE: ./src/utils/commands/parse.ts
 /**
  * Parses command input that can be in multiple formats:
  * 1. Single command string: "npm install"
@@ -26197,7 +26197,7 @@ function parseCommandInput(input, inputName) {
     return [trimmed];
 }
 
-;// CONCATENATED MODULE: ./src/action/utils/context/index.ts
+;// CONCATENATED MODULE: ./src/utils/context/index.ts
 
 
 /** parses action inputs from the environment */
@@ -26283,7 +26283,7 @@ const run = async () => {
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6327);
+/* harmony import */ var _action_run__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8163);
 
 
 try {

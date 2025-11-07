@@ -1,5 +1,5 @@
 import { expect, it, describe, afterEach, vi } from 'vitest';
-import { performHealthCheck } from '../src/action/utils/healthcheck';
+import { performHealthCheck } from '@/utils/healthcheck';
 
 describe('Health Check Utilities', () => {
     // Mock fetch globally

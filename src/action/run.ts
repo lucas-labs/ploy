@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { deployAction } from './subactions/deploy/action';
-import { getInputs, setOutputs } from './utils/context';
+import { getInputs, setOutputs } from '@/utils/context';
 
 /** main entry point for the action */
 export const run = async (): Promise<void> => {

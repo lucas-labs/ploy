@@ -1,11 +1,11 @@
 // Mock the dependencies
 vi.mock('@actions/core');
-vi.mock('../src/action/subactions/deploy/action');
+vi.mock('@/action/subactions/deploy/action');
 
 import { expect, it, describe, vi, beforeEach, afterEach } from 'vitest';
 import * as core from '@actions/core';
-import { deployAction } from '../src/action/subactions/deploy/action';
-import { run } from '../src/action/run';
+import { deployAction } from '@/action/subactions/deploy/action';
+import { run } from '@/action/run';
 
 describe('Action Run Function', () => {
     beforeEach(() => {

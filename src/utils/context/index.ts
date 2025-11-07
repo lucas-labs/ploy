@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import type { ActionInputs, ActionOutputs } from '../../types';
+import type { ActionInputs, ActionOutputs } from '@/types';
 import { parseCommandInput } from '../commands/parse';
 
 /** parses action inputs from the environment */

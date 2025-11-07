@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCommandInput } from '../src/action/utils/commands/parse';
+import { parseCommandInput } from '@/utils/commands/parse';
 
 describe('parseCommandInput', () => {
     it('returns undefined for empty input', () => {

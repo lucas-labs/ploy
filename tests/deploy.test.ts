@@ -1,16 +1,16 @@
 // Mock modules
 vi.mock('@actions/core');
-vi.mock('../src/action/utils/commands');
-vi.mock('../src/action/utils/healthcheck');
+vi.mock('@/utils/commands');
+vi.mock('@/utils/healthcheck');
 
 import { expect, it, describe, vi, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import type { ActionInputs } from '../src/action/types';
-import { executeCommand, executeCommands } from '../src/action/utils/commands';
-import { performHealthCheck } from '../src/action/utils/healthcheck';
+import type { ActionInputs } from '@/types';
+import { executeCommand, executeCommands } from '@/utils/commands';
+import { performHealthCheck } from '@/utils/healthcheck';
 import * as core from '@actions/core';
-import { deployAction } from '../src/action/subactions/deploy/action';
+import { deployAction } from '@/action/subactions/deploy/action';
 
 describe('Deploy Action', () => {
     let testDir: string;

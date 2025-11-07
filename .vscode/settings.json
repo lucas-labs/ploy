@@ -9,7 +9,8 @@
         ".gitignore": true,
         "eslint.config.*": true,
         "tsconfig.json": true,
-        "vitest.config.ts": true,
+        "*.code-workspace": true,
+        // "vitest.config.ts": true,
 
         // package manager artifacts
         "node_modules": true,
@@ -22,7 +23,8 @@
         "dist": true,
 
         // ci/cd
-        ".github": true
+        ".github": true,
+        "Taskfile": true
     },
     "editor.formatOnSave": true,
     "editor.rulers": [100],

@@ -18,7 +18,7 @@ import * as core from '@actions/core';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { run } from '../src/action/run';
+import { run } from '@/action/run';
 
 describe('Integration Tests', () => {
     let testDir: string;

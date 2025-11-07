@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import type { HealthCheckResult } from '../../types';
+import type { HealthCheckResult } from '@/types';
 
 /**
  * Parses a health check code range string (e.g., "200-299") into min and max values
