@@ -355,7 +355,7 @@ async function release() {
 
         try {
             exec(
-                `tea release create --tag ${fullTag} --title "${releaseTitle}" --note-file "${notesFile}"`,
+                `tea release create --remote origin --tag ${fullTag} --title "${releaseTitle}" --note-file "${notesFile}"`,
             );
             console.log('✅ Gitea release created successfully');
         } catch {
@@ -365,10 +365,18 @@ async function release() {
             console.error('   - You are logged in to your Gitea instance (run: tea login add)');
             console.error('   - You have permission to create releases in this repository');
             console.error('\n   To create the release manually, run:');
-            console.error(
-                `   tea release create --tag ${fullTag} --title "${releaseTitle}" --note-file "${notesFile}"`,
+
+            // backup the notes to .
+            const backupNotesFilePath = resolve(
+                process.cwd(),
+                `RELEASE_NOTES_${fullTag.replace(/\./g, '_')}.md`,
             );
-            console.error(`\n   Note: The release notes file is at: ${notesFile}`);
+            writeFileSync(backupNotesFilePath, autoNotes, 'utf-8');
+
+            console.error(
+                `   tea release create --tag ${fullTag} --title "${releaseTitle}" --note-file "${backupNotesFilePath}"`,
+            );
+            console.error(`\n   Note: The release notes file is at: ${backupNotesFilePath}`);
         } finally {
             // Clean up the temporary directory
             try {
