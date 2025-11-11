@@ -34,6 +34,7 @@ const getInputs = (): ActionInputs => {
     const healthcheckRetries = parseInt(core.getInput('healthcheck_retries') || '3', 10);
     const healthcheckDelay = parseInt(core.getInput('healthcheck_delay') || '5', 10);
     const healthcheckInterval = parseInt(core.getInput('healthcheck_interval') || '5', 10);
+    const currentJunctionName = core.getInput('current_junction_name') || 'current';
 
     return {
         appName,
@@ -51,6 +52,7 @@ const getInputs = (): ActionInputs => {
         healthcheckRetries,
         healthcheckDelay,
         healthcheckInterval,
+        currentJunctionName,
     };
 };
 

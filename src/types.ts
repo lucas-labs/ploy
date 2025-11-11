@@ -14,6 +14,7 @@ export interface ActionInputs {
     healthcheckRetries: number;
     healthcheckDelay: number;
     healthcheckInterval: number;
+    currentJunctionName: string;
 }
 
 export interface ActionOutputs {

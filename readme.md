@@ -41,6 +41,7 @@ structure with a `current` junction pointing to the active version.
 | `healthcheck_retries`             | Number of health check retries                         | `3`                       | `5`                                               |
 | `healthcheck_delay`               | Delay before first health check (seconds)              | `5`                       | `10`                                              |
 | `healthcheck_interval`            | Interval between retries (seconds)                     | `5`                       | `10`                                              |
+| `current_junction_name`           | Name of the junction pointing to current release       | `current`                 | `live`, `active`, `www`, `dist`                   |
 
 ## Outputs
 

@@ -9,7 +9,7 @@ const run: Step['run'] = async (ctx) => {
         throw new Error('Release path is not defined in context outputs.');
     }
 
-    const currentPath = path.join(ctx.inputs.deployRoot, 'current');
+    const currentPath = path.join(ctx.inputs.deployRoot, ctx.inputs.currentJunctionName);
 
     const previousRelease = await junction.getTarget(currentPath);
     await junction.update(currentPath, releasePath);

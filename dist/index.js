@@ -26229,7 +26229,7 @@ const switch_active_release_step_run = async (ctx) => {
     if (!releasePath) {
         throw new Error('Release path is not defined in context outputs.');
     }
-    const currentPath = external_node_path_default().join(ctx.inputs.deployRoot, 'current');
+    const currentPath = external_node_path_default().join(ctx.inputs.deployRoot, ctx.inputs.currentJunctionName);
     const previousRelease = await getTarget(currentPath);
     await update(currentPath, releasePath);
     core.info(`Switched active release from '${previousRelease ?? 'none'}' to '${currentPath}'`);
@@ -26399,6 +26399,7 @@ const getInputs = () => {
     const healthcheckRetries = parseInt(core.getInput('healthcheck_retries') || '3', 10);
     const healthcheckDelay = parseInt(core.getInput('healthcheck_delay') || '5', 10);
     const healthcheckInterval = parseInt(core.getInput('healthcheck_interval') || '5', 10);
+    const currentJunctionName = core.getInput('current_junction_name') || 'current';
     return {
         appName,
         deployRoot,
@@ -26415,6 +26416,7 @@ const getInputs = () => {
         healthcheckRetries,
         healthcheckDelay,
         healthcheckInterval,
+        currentJunctionName,
     };
 };
 /** sets action outputs */

@@ -83,6 +83,7 @@ describe('Deploy Action', () => {
         healthcheckRetries: 3,
         healthcheckDelay: 5,
         healthcheckInterval: 5,
+        currentJunctionName: 'current',
     });
 
     describe('basic deployment flow', () => {
